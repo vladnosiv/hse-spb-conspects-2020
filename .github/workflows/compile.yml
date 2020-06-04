@@ -27,6 +27,8 @@ jobs:
     
     - name: Commit and push
       run: |
+        git config --global user.email "scanhex@gmail.com"
+        git config --global user.name "Github Actions"
         git add C++/all-tickets.md
         git commit -m "Automatically compile all the tickets"
         git push origin master
