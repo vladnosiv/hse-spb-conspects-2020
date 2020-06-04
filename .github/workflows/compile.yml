@@ -28,5 +28,5 @@ jobs:
         git config --global user.email "scanhex@gmail.com"
         git config --global user.name "Github Actions"
         git add C++/all-tickets.md
-        git commit -m "Automatically compile all the tickets together"
-        git push origin master
+        git commit -m "Automatically compile all the tickets together" || echo Nothing to commit
+        git push origin master || echo Nothing to push
