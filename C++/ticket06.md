@@ -18,7 +18,7 @@
 
 *  get   
 `std::istream::get` - (`cin.get`) - считывает 1 символ/строку в c-style, бывает:  
-```
+```C++
 int get(); //считывает символ и возвращает его целочисленный код
 istream& get (char& c); //можно записать в переменную
 istream& get (char* s, streamsize n); // записать в строку в стиле c-style
@@ -41,7 +41,7 @@ istream& get (streambuf& sb, char delim);
 `!=` и `==`
 `istream& seekg (streampos pos);` - устанавливает позицию на следующий символ, который будет доставаться из потока  
 Пример:
-```
+```C++
 // get length of file:
     is.seekg (0, is.end);
     int length = is.tellg();
@@ -49,7 +49,7 @@ istream& get (streambuf& sb, char delim);
 ```
 #### Форматированный ввод-вывод, отличия от printf (типобезопасность, поддержка пользовательских типов)
 Пример для форматированного ввода-вывода
-```
+```C++
 std::ostream& operator<<(std::ostream& os, int v) {
     return os;
 }
@@ -61,7 +61,7 @@ std::cin >> x >> y;
 operator>>(operator>>(std::cin, x), y); //можно еще так
 ```
 Стандартная библиотека перегружает операторы для базовых типов (`int`, `double`, `char`, `char*`) и каких-то своих (`std::string`). Форматированный ввод - потому что мы можем сами задавать формат, какой хотим. Разберем пример с добавлением произвольного класса(сразу про реализацию своих операторов ввода-вывода):
-```
+```C++
 struct BigInt {
 };
 std::ostream& operator<<(std::ostream& os, const BigInt &v) {
@@ -76,7 +76,7 @@ std::ostream& operator<<(std::ostream& os, const BigInt &v) {
 *  Сам объект для чтения принимает по неконстантной ссылке, потому что мы в него что-то записываем.   
 *  Можно делать friend, если хотим доставать какие-то приватные поля у класса.  
 Но так как обычно friend использовать не любят, потому что это нехорошо отражается на архитектуре(цитата Соколова), то можно писать так:   
-```
+```C++
 struct BigInt {
 public:
     std::ostream& operator<<(std::ostream& os) {
@@ -117,7 +117,7 @@ std::cin.exceptions(std::cin.failbit | std::cin.badbit);
 #### Реализация своих манипуляторов (например, `read_le_int32` или `eat`)
 Если у нас манипулятор без параметров, то можем просто представлять его как функцию:
 `ios_base& hex (ios_base& str);` - пример из std, устанавливает флаг(basefield) на hex и работает с ним.
-```
+```C++
 ostream &tab(ostream &out)
 {
     return out « '\t'; // добавляем tab
@@ -134,7 +134,7 @@ istream &eatline(istream &in) // убираем строку
 Если же хотим запускать от чего-то (например, `read_le_int32(x)`), то это похоже на вызов конструктора у объекта, поэтому приходится заводить структуру.  
 Рассмотрим несколько примеров:  
 Пример с friend - манипулятором
-```
+```C++
 struct write_le_int32 {
     explicit write_le_int32(int32_t _val) : val(_val) {} //для read - принимаем и храним все по ссылке
     friend std::ostream& operator<<(std::ostream &os, const write_le_int32 &d);/* const&, чтобы лишний раз не копировать,
@@ -145,7 +145,7 @@ private:
 };
 ```
 Можно снова избавиться от `friend` с помощью трюка, описанного выше (разумеется, можно использовать не только операторы `<<`, но и `()`, например)  
-```
+```C++
 class expand
 {
 public:ostream &operator <<(ostream &out, expand number)
