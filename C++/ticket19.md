@@ -126,3 +126,59 @@ int main() {
     std::cout << (a ? *a : 0) << std::endl;
 }
 ```
+
+Не уверен, что это нужно, но вроде где-то это есть.
+Можно делать шаблонные операторы приведения (ну вроде понятно, как делать конструкторы приведения). Например, написали свой BigInteger, тогда хочется написать операторы приведения к char, int, long long. В простом варианте так
+
+```C++
+#include <cstdint>
+#include <iostream>
+
+struct BigInteger
+{
+    std::int64_t first = 0;
+    std::int64_t second = 0; // пусть храним 2 половины числа
+    template <typename T>
+    operator T()
+    {
+        return first + second; // какое-то осознанное приведение к типу, это, понятно, некорректно
+    }
+};
+
+int main()
+{
+    BigInteger i;
+    std::cout << static_cast<int>(i) << std::endl;
+    std::cout << static_cast<long long>(i) << std::endl;
+}
+```
+
+Это работает, я проверил. Еще можно добавить SFINAE, чтобы было совсем красиво.
+
+```C++
+#include <cstdint>
+#include <iostream>
+#include <string>
+
+struct BigInteger
+{
+    std::int64_t first = 0;
+    std::int64_t second = 0; // пусть храним 2 половины числа
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+    operator T()
+    {
+        return first + second; // какое-то осознанное приведение к типу, это, понятно, некорректно
+    }
+};
+
+int main()
+{
+    BigInteger i;
+    std::cout << static_cast<int>(i) << std::endl;
+    std::cout << static_cast<long long>(i) << std::endl;
+    // std::cout << static_cast<std::string>(i) << std::endl; // не компилируется
+}
+
+```
+
+Это тоже работает, я проверил.
