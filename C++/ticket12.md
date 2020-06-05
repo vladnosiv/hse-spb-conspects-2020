@@ -54,12 +54,9 @@ private:
 ```cpp
 struct DataHolder {
   DataHolder(const DataHolder& other) : size_{other.size_} { 
-    try {
-      data_ = new char[size_];
-      std::memcpy(data_, other.data_, other.size_);
-    } catch(... /* можно специфировать */) {
-        delete[] data_;
-    }
+      std::unique_ptr<char[]> newdata(new char[size_]);
+      std::memcpy(newdata.get(), other.data_, other.size_);
+      data_ = newdata.release();
   }
   
   DataHolder& operator=(DataHolder other) { 
@@ -77,6 +74,8 @@ private:
 };
   
 ```
+*Замечание* ```cpp std::unqiue_ptr<T[]>``` для того, чтобы если в std::memcpy произойдет исключение не произошло утечки ресурсов.
+
 Из-за такой реализации код сильно упрощается.
 ### Проблемы с move-семантикой
 Проблемы возникают, когда мы работаем с объектами, у которых move оператор присваивания или ctor 
