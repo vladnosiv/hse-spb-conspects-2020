@@ -73,13 +73,16 @@
 
 
 #### Range-based for
-Синтаксический сахар, разворачивается как 
+Синтаксический сахар:
 ```cpp
 for (DECL : EXPR) BODY
+```
+разворачивается как
+```cpp
 {
     auto range = EXPR;
     auto begin = std::begin(range);
-    auto end = std::begin(end);
+    auto end = std::end(range);
     for (auto it = begin; it != end; ++it) {
         DECL = *it;
         BODY
@@ -93,6 +96,8 @@ for (DECL : EXPR) BODY
 [Пример](https://cppinsights.io/) развёртки сахара.
 
 Не стоит удалять/добавлять элементы в контейнер, внутри range-based for по нему.
+
+Возможно, больше подробностей можно найти в №28.
 
 #### Удаление, Инвалидация
 Функция `.erase` возвращает итератор на элемент, который теперь занимает место первого удалённого элемента, либо `end()` при его отсутствии.
