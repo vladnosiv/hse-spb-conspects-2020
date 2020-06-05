@@ -1,5 +1,5 @@
 ## Билет 35
-Автор: Сурков Пётр
+Автор: Петя Сурков
 
 ### Мотивация метапрограммирования
 
@@ -193,17 +193,25 @@ static_assert(fac_v<int, 5> == 120);
 
 Есть встроенные в язык "кирпичики" из `type_traits`, которые можно сделать самому:
 
-* `std::remove_const` (уже видели)
 * `is_same<A, B>` совпадают ли типы? 
 * `is_convertible<From, To>` — можно ли сконвертировать `From` в `To` неявно? Это позволит узнать, например, будет ли компилиться `To foo() { return From{}; }`
 * `is_nothrow_convertible<T, U>` — то, что выше, но и `noexcept`? Важно: просто смотрит на пометку `noexcept`, никак не смотрит на реализацию.
 * `is_constructible<T, A, B>` — есть ли конструктор `T` из `A` и `B`?
 
-### Можно написать свой
+### Пример алгоритма на типах на type traits
 ```c++
 template<typename T> struct is_reference { constexpr static bool value = false; };
 template<typename T> struct is_reference<T&> { constexpr static bool value = true; };
 template<typename T> struct is_reference<T&&> { constexpr static bool value = true; };
+```
+
+### Ещё пример. Для сериализации
+Пишем общий случай `template<typename T> struct serializer {};`, а дальше для каждого типа реализуем 
+```c++
+struct serializer {
+    static std::string serialize(const T&);
+    static T deserialize(std::string);
+}
 ```
 ### Сложные type traits
 Некоторые принципиально требуют поддержки компилятора:
