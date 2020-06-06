@@ -324,14 +324,14 @@ throw my_exception("Foo");
 * Static и анонимные пространства имен.
     * Internal linkage позволяет использовать объект/функцию/класс только в той единице трансляции, в которой они объявлены и определены, что позволяет избежать коллизий.
         
-        file1.hpp
+        file1.cpp
 
         ```C++
         static int var = 82; // Передаю привет Гимназии №82 города Краснодара
         int foo() { return var; }
         ```
 
-        file2.hpp
+        file2.cpp
 
         ```C++
         static int var = 239;
@@ -341,9 +341,9 @@ throw my_exception("Foo");
         main.cpp
         ```C++
         #include <iostream>
-        
-        #include "file1.hpp"
-        #include "file2.hpp"
+
+        int foo();
+        int bar();
 
         int main() {
             std::cout << foo() << std::endl; // 82
