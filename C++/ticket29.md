@@ -215,7 +215,7 @@ int main()
 }
 ```
 * `std::pair<> mismatch(first1, last1, first2)`, первое место с отличием. Возвращает пару итераторов, в которых раличаются 2 range 
-```
+```C++
 // mismatch algorithm example
 #include <iostream>     // std::cout
 #include <algorithm>    // std::mismatch
@@ -253,7 +253,7 @@ int main () {
 `accumulate(first, last, init = 0)` для operator+ - возвращает сумму всех элементов, можем задать начальное значение и, например, сконкатенировать все строки в диапазоне
 `T accumulate( InputIt first, InputIt last, T init, BinaryOperation op );` - можно задавать свой бинарный оператор. 
 C C++20 в обоих случаях будет добавляться std::move() к тому, что у нас суммируется. Например, сама сумма в конкретный момент времени будет перемещаться, чтобы избежать копирований, то есть, предполагаемый вид: 
-```
+```C++
 template<class InputIt, class T, class BinaryOperation>
 constexpr // since C++20
 T accumulate(InputIt first, InputIt last, T init, 
