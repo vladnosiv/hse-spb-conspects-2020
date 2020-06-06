@@ -3207,7 +3207,7 @@ constexpr typename std::remove_reference<_Tp>::type&& move(_Tp&& __t) noexcept{
           return *this;
       }
   };
-```
+  ```
 
   * В примере выше можно заменить операторы присваивания на один `Person& operator=(Person other)` и воспользоваться идеей copy and swap, однако возникают проблемы с гарантиями исключений. В этом случае правило пяти становится правилом четырех.
 
