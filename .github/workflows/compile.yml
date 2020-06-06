@@ -21,12 +21,23 @@ jobs:
     - uses: actions/checkout@v2
       
     - name: Concatenate all the tickets into all-tickets.md
-      run: cat C++/ticket??.md C++/ticketOver.md > C++/all-tickets.md
+      run: |
+        cat C++/ticket??.md C++/ticketOver.md > C++/all-tickets.md
+
+        > C++/all-tickets-lists.md
+        for ticket in C++/ticket*.md; do 
+          echo -e "<details>\n<summary>" >> C++/all-tickets-lists.md
+          cat "$ticket" | sed -nr "1s/^##(.*)/\1/p" >> C++/all-tickets-lists.md
+          echo -e "</summary>\n" >> C++/all-tickets-lists.md
+          cat "$ticket" | sed '1d' >> C++/all-tickets-lists.md
+          echo -e "</details>\n" >> C++/all-tickets-lists.md
+        done
     
     - name: Commit and push
       run: |
         git config --global user.email "scanhex@gmail.com"
         git config --global user.name "Github Actions"
         git add C++/all-tickets.md
+        git add C++/all-tickets-lists.md
         git commit -m "Automatically compile all the tickets together" || echo Nothing to commit
         git push origin master || echo Nothing to push
