@@ -148,10 +148,7 @@ private:
 ```C++
 class expand
 {
-public:ostream &operator <<(ostream &out, expand number)
-{
-   return number(out);
-}
+public:
     expand(short to_expand) : value (to_expand) {}
     ostream &operator()(ostream &) const; //как-то выведем число из цифр в формате слов
 private:
