@@ -3440,7 +3440,7 @@ decltype(auto) foo (int x) {
 ```cpp
 for (DECL : EXPR) BODY
 ```
-разворачивается как
+для экзамена нам хватит следующего приближения (со слов Егора):
 ```cpp
 {
     auto range = EXPR;
@@ -3452,6 +3452,8 @@ for (DECL : EXPR) BODY
     }
 }
 ```
+На самом деле, разворачивается чуть сложнее. Можете почитать об этом [тут](https://stackoverflow.com/questions/8164567/how-to-make-my-custom-type-to-work-with-range-based-for-loops/31457319#31457319).
+
 Функции `std::begin`/`std::end` вызывают внутренние `begin`/`end`, но перегружены для обычных массивов.
 
 Есть тонкость. В `for (int &x : foo().bar()) { ... }` временное значение `foo()` не живёт, но `bar()` живёт. 
