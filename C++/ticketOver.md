@@ -1,5 +1,7 @@
 ## Прочие мелочи, не в билетах
 
+### TODO: If-with-init statement
+
 ### Строковые литералы
 Тип строковых литералов - массив `const char` фиксированной (на этапе компиляции) длины. Это позволяет писать такие шаблонные функции:
 ```c++
@@ -24,3 +26,9 @@ static_assert(parse_format("hello%d=%s").second[0] == 'd');
 static_assert(parse_format("hello%d=%s").second[1] == 's');
 ```
 Таким образом, вот эта [библиотека](https://github.com/hanickadot/compile-time-regular-expressions) позволяет работать с регулярками в стиле `ctre::match<"[a-z]+([0-9]+)">(s)`
+
+### TODO: RTTI
+#### TODO: "полиморфный класс"
+#### TODO: typeid
+#### TODO: const std::type_info& и std::type_index
+#### TODO: Mangling имён и type_info::name()
