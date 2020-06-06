@@ -23,6 +23,7 @@
 
 #### Примеры немодифицирующих, сравнивающих, модифицирующих алгоритмов
 ##### Немодифицирующие
+Заметим, что немодифицирующие - это не означает, что с помощью этого алгоритма модифицировать нельзя. Мы можем модифицировать, но модифицировать будет **предикат**
 Рассмотрим первую группу, которая проверяет выполнен ли предикат для каждого из элементов диапазона first - last  
 [Если нужно - cppreference](https://en.cppreference.com/w/cpp/algorithm/all_any_none_of)
 * `bool all_of(first, last, pred)` - унарный предикат выполняется для всех элементов
@@ -39,7 +40,67 @@ struct DivisibleBy // проверяет делится ли число на d
 if (std::any_of(v.cbegin(), v.cend(), DivisibleBy(7))) {
    std::cout << "At least one number is divisible by 7\n";
 }
+```  
+Следующая группа - это такие алгоритмы, которые насчитывают что-то для всех элементов из диапазона first - last  
+* `UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f );`[ссылка](https://en.cppreference.com/w/cpp/algorithm/for_each)
+* `InputIt for_each_n(InputIt first, Size n, UnaryFunction f)` [ссылка](https://en.cppreference.com/w/cpp/algorithm/for_each_n)
+
+Первый из них для каждого элемента применяет предикат, а после его возвращает(`std::move`) (может и не возвращать ничего, если это нам не нужно). Это сделано, чтобы, например, можно было насчитать фунцию на всех элементах, а потом получить результат и работать с ним.
+Пример для этого:
+```C++
+#include <vector>
+#include <algorithm>
+#include <iostream>
+ 
+struct Sum
+{
+    void operator()(int n) { sum += n; }
+    int sum{0};
+};
+ 
+int main()
+{
+    std::vector<int> nums{3, 4, 2, 8, 15, 267};
+ 
+    auto print = [](const int& n) { std::cout << " " << n; };
+ 
+    std::cout << "before:";
+    std::for_each(nums.cbegin(), nums.cend(), print); // 3 4 2 8 15 267
+    std::cout << '\n';
+ 
+    std::for_each(nums.begin(), nums.end(), [](int &n){ n++; }); //увеличили все элементы на 1
+ 
+    // calls Sum::operator() for each number
+    Sum s = std::for_each(nums.begin(), nums.end(), Sum()); //насчитали сумму
+ 
+    std::cout << "after: ";
+    std::for_each(nums.cbegin(), nums.cend(), print); // 4 5 3 9 16 268
+    std::cout << '\n';
+    std::cout << "sum: " << s.sum << '\n'; //305
+}
 ```
+Второй - применяет для всех \[first, first + n) предикат f и возвращает итератор `first + n`. Если `n < 0` - UB.
+Хочет, чтобы у предиката была сигнатура: `void fun(const Type &a);` (`operator()` тоже подоходит)
+Пример использования:
+```C++
+#include <algorithm>
+#include <iostream>
+#include <vector>
+ 
+int main()
+{
+    std::vector<int> ns{1, 2, 3, 4, 5};
+    for (auto n: ns) std::cout << n << ", ";
+    std::cout << '\n'; // 1, 2, 3, 4, 5, 
+    std::for_each_n(ns.begin(), 3, [](auto& n){ n *= 2; }); // первые 3 элемента умножили не 2
+    for (auto n: ns) std::cout << n << ", ";
+    std::cout << '\n'; // 2, 4, 6, 4, 5,
+ 
+
+}
+```
+
+
 #### Erase-remove idiom, встроенный метод для list, своя реализация remove_if
 #### Двоичный поиск: отличия lower_bound и upper_bound
 #### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
