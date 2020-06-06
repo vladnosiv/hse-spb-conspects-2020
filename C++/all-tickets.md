@@ -4397,7 +4397,155 @@ T accumulate(InputIt first, InputIt last, T init,
 }
 ```
 ##### Модифицирующие
+Осторожно с пересечениями входа и выхода! 
 
+* `copy(f, l, out)/move{,_backward}` Если куда-то копия, то конечный итератор не даём, он выводится. 
+Первая версия - копирует в первый итератор второго диапазона все элементы, начиная с f. Если добавить `copy_backward`, то он будет копировать, но начиная с l. Это нужно, чтобы, например, если у нас `out` лежит между `f` и `l`, то мы могли бы скопировать. В то же время, это не просто будет зацикливание, а UB, потому что, например, для чего-то компилятор сможет использовать `memset` и это сработают. Есть аналогичная версия с `move`, отличие в том, что теперь происходит не копирование, а перемещение   
+Рассмотрим пример:   
+```C++
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <iterator>
+#include <numeric>
+ 
+int main()
+{
+    std::vector<int> from_vector(10);
+    std::iota(from_vector.begin(), from_vector.end(), 0); //функция из numericlibrary, 
+   //которая заполняет числами от 0 до 9 в нашем случа
+ 
+    std::vector<int> to_vector;
+    std::copy(from_vector.begin(), from_vector.end(),
+              std::back_inserter(to_vector));
+// or, alternatively,
+//  std::vector<int> to_vector(from_vector.size());
+//  std::copy(from_vector.begin(), from_vector.end(), to_vector.begin());
+// either way is equivalent to
+//  std::vector<int> to_vector = from_vector;
+ 
+    std::cout << "to_vector contains: ";
+ //скопировали все в поток вывода
+    std::copy(to_vector.begin(), to_vector.end(),
+              std::ostream_iterator<int>(std::cout, " "));
+    std::cout << '\n'; //to_vector contains: 0 1 2 3 4 5 6 7 8 9
+}
+```
+* `fill(f, l, value)`, `OutputIt fill_n(first, count, value)`  
+Первая версия устанавливает значение `value` для всего диапазона, вторая делает это `count` раз и возврашает итератор на первый элемент который мы еще не изменили.  
+* `generate(f, l, g)`, `OutputIt generate_n(first, count, gen)`  
+Аналогично предыдущему, но теперь вызывается генератор, ожидаемая сигнатура от него: `Ret fun();`, то есть, чтобы он возвращал результат. Может быть, как функтором, так и функцией  
+Пример:  
+```C++
+#include <algorithm>
+#include <iostream>
+#include <vector>
+ 
+int f()
+{ 
+    static int i = 1;
+    return i++;
+}
+ 
+int main()
+{
+    std::vector<int> v(5);
+    std::generate(v.begin(), v.end(), f);
+ 
+    std::cout << "v: ";
+    for (auto iv: v) {
+        std::cout << iv << " ";
+    }
+    std::cout << "\n"; // v: 1 2 3 4 5
+ 
+    // Initialize with default values 0,1,2,3,4 from a lambda function
+    // Equivalent to std::iota(v.begin(), v.end(), 0);
+    std::generate(v.begin(), v.end(), [n = 0] () mutable { return n++; });
+ 
+    std::cout << "v: ";
+    for (auto iv: v) {
+        std::cout << iv << " ";
+    }
+    std::cout << "\n"; // v: 0 1 2 3 4
+}
+```
+* `OutIt transform(f, l, out, unary_op)` [ссылка](https://en.cppreference.com/w/cpp/algorithm/transform) 
+Как map из Haskell: трансформирует последовательность и записывает ее в итератор out  
+Существует версия для бинарного оператора: 
+```C++
+template<class InputIt1, class InputIt2, 
+         class OutputIt, class BinaryOperation>
+OutputIt transform(InputIt1 first1, InputIt1 last1, InputIt2 first2, 
+                   OutputIt d_first, BinaryOperation binary_op)
+{
+    while (first1 != last1) {
+        *d_first++ = binary_op(*first1++, *first2++);
+    }
+    return d_first;
+}
+//first2 0 - второй входной итератор
+``` 
+* `sort` (необязательно стабильный, гарантированный NlogN, если долго работает quicksort, то запускается mergesort)/`stable_sort`(может выделять себе память, работает дольше, чаще всего представляет из себя mergesort)/`nth_element` (k-ая порядковая статистика)
+
+Из numeric library:  
+* `OutputIt partial_sum( InputIt first, InputIt last, OutputIt d_first );` - считает частичные суммы  
+Пример: 
+```C++
+#include <numeric>
+#include <vector>
+#include <iostream>
+#include <iterator>
+#include <functional>
+ 
+int main()
+{
+    std::vector<int> v = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2}; // or std::vector<int>v(10, 2);
+ 
+    std::cout << "The first 10 even numbers are: ";
+    std::partial_sum(v.begin(), v.end(), 
+                     std::ostream_iterator<int>(std::cout, " "));
+    std::cout << '\n'; //The first 10 even numbers are: 2 4 6 8 10 12 14 16 18 20 
+
+    std::partial_sum(v.begin(), v.end(), v.begin(), std::multiplies<int>()); //добавили свой бинарный оператор
+    std::cout << "The first 10 powers of 2 are: ";
+    for (auto n : v) {
+        std::cout << n << " ";
+    }
+    std::cout << '\n'; // The first 10 powers of 2 are: 2 4 8 16 32 64 128 256 512 1024
+}
+```
+* `inclusive_scan` [ссылка](https://en.cppreference.com/w/cpp/algorithm/inclusive_scan)
+* `exclusive_scan`  
+Данные две функции похожи на предыдущую, вычисляют какую-то префиксную функцию на range. Разница лишь в том, что в первом случае учитывается последний элемент в текущем range, а во втором - нет 
+```C++
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <numeric>
+#include <vector>
+ 
+int main()
+{
+  std::vector data {3, 1, 4, 1, 5, 9, 2, 6};
+ 
+  std::cout << "exclusive sum: ";
+  std::exclusive_scan(data.begin(), data.end(),
+		      std::ostream_iterator<int>(std::cout, " "),
+		      0); // добавили начальное значение: 0 3 4 8 9 14 23 25 
+  std::cout << "\ninclusive sum: "; 
+  std::inclusive_scan(data.begin(), data.end(),
+		      std::ostream_iterator<int>(std::cout, " ")); // 3 4 8 9 14 23 25 31
+ 
+  std::cout << "\nexclusive product: ";  
+  std::exclusive_scan(data.begin(), data.end(),
+		      std::ostream_iterator<int>(std::cout, " "),
+		      1, std::multiplies<>{}); //добавили начальное значение и свою функцию 1 3 3 12 12 60 540 1080 		      
+  std::cout << "\ninclusive product: ";
+  std::inclusive_scan(data.begin(), data.end(),
+		      std::ostream_iterator<int>(std::cout, " "),
+		      std::multiplies<>{}); // 3 3 12 12 60 540 1080 6480		      
+}
+```
 #### Erase-remove idiom, встроенный метод для list, своя реализация remove_if
 #### Двоичный поиск: отличия lower_bound и upper_bound
 #### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
