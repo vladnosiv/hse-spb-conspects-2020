@@ -4887,7 +4887,7 @@ foo(make_unique<Foo>(), make_unique<Bar>());
 ### Чистые указатели
 * Совместимость с Си (лучше сразу обернуть в RAII или умный указатель).
 * Ссылаемся на объект, который точно нас переживёт:
-  ```С++
+  ```C++
   struct SearchTreeNode {
       std::unique_ptr<SearchTreeNode> left, right;
       SearchTreeNode *parent;
