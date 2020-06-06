@@ -41,14 +41,14 @@
   * prvalue (как бы были раньше) — имени нет, сейчас помрёт, можно разрушить.
     * Литералы: `42`, `nullptr`
     * То, что возвращает по значению: `a + b`, `getVal()` (если `int getVal();`)
-    * Обращения к полям: `a.m` (где `a` — prvalue) (**примечание от читающих ночью (Юра): судя по [cpprefrence](https://en.cppreference.com/w/cpp/language/value_category), a.m, где a - rvalue, - это xvalue**)
+    * Обращения к полям: `a.m` (где `a` — prvalue) (**примечание от читающих ночью (Юра): судя по [cpprefrence](https://en.cppreference.com/w/cpp/language/value_category), a.m, где a - prvalue, - это xvalue**)
     * `this` (именно сам указатель)
     * Лямбда
     * Свойства:
       * Не полиморфное, мы точно знаем тип.
   * xvalue — новая категория — имя есть, но можно разрушить.
     * То, что возвращает `T&&`: `static_cast<int&&>(x)`, `std::move(x)` (это просто `static_cast` внутри).
-    * Обращения к полям: `a.m` (тут `a` — xvalue). (**примечание от читающих ночью (Юра): судя по [cpprefrence](https://en.cppreference.com/w/cpp/language/value_category), a.m, где a - rvalue, - это тоже xvalue**)
+    * Обращения к полям: `a.m` (тут `a` — xvalue). (**примечание от читающих ночью (Юра): судя по [cpprefrence](https://en.cppreference.com/w/cpp/language/value_category), a.m, где a - prvalue, - это тоже xvalue**)
 * Смешанные категории:
   * glvalue — то, у чего есть имя. lvalue или xvalue.
   * rvalue — то, из чего можно мувать. prvalue или xvalue.
