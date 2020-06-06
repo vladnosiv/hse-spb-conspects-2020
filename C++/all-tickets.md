@@ -4449,28 +4449,25 @@ DFS в compile time (dependency injection): есть куча классов с 
 ### Constexpr-вычисления
 
 * Можно использовать многие конструкции языка: нельзя `goto` и не-`constexpr` функции.
-* Можно использовать скалярные типы и типы с `constexpr`-конструктором и тривиальным деструктором (вроде `optional` от простых типов).
+* Можно использовать скалярные типы и типы с `constexpr`-конструктором и тривиальным деструктором (пояснение ниже).
 * С C++14 можно менять переменные внутри функций!
 * До C++20 нельзя выделять память => нельзя `vector`
 
-Пример:
-
+Пример: напишем функцию для вычисления факториала на этапе компиляции.
 ```c++
 constexpr int factorial(int n) {
     int res = 1;
-    optional<int> unused1;
-    // vector<int> unused2(n); нельзя до C++20 
     for (int i = 1; i <= n; i++)
-        res *= i; // Можно с C++14
+        res *= i; // Менять переменные можно с C++14
     return res;
 }
-static_assert(factorial(5) == 120);
-// ...
-assert(factorial(5) == 120);
-std::vector<int> vec(factorial(5));
-std::array<int, factorial(5)> arr;
+static_assert(factorial(5) == 120); // работает!
+std::array<int, factorial(5)> arr; // тоже работает: std::array надо знать размер на этапе компиляции, а factorial(5) вычислима на этапе компиляции
 ```
 
+В `constexpr-`функции мы могли бы создать, например,  `optional<T>`, где `T` - какой-нибудь тривиальный тип, допустим `int`. Потому что у `optional<int>` есть `constexpr`-конструктор, тривиальный деструктор.
+
+А начиная с 20 плюсов, могли бы создавать и вектора в `constexpr` функциях.
 ### "Функции" из типов в типы
 Ещё с C++98 бывают функции из типов в типы:
 ```c++
@@ -4681,14 +4678,18 @@ namespace std {
 ## Билет 36
 Автор: Петя Сурков
 
+Если вам попался этот билет на экзамене, сначала прочтите конец прошлого билета, начиная с type traits. Это нужно для понимания этого билета и это скорее всего спросят в доп вопросах.
+
+То, что будет под следующим заголовком, не согласуется с определением type traits из предыдущего билета. Егор подтвердил, что тут есть путаница в названиях. В следующей строчке правильнее опустить слово "type", но я пока что оставил для соответвия названий билетам.
+
 ### Свои расширяемые type traits
 Допустим, написали такую библиотеку
 ```c++
-template<typename T> struct serialization_traits {
+template<typename T> struct serialization_traits { // базовый случай, зовём serialize и deserialize у самого объекта
     static void serialize(ostream &os, const T &x) {      x.serialize(os); }
     static T deserialize(ostream &is)              { T x; x.deserialize(is); return x; }
 };
-template<> struct serialization_traits<int> {
+template<> struct serialization_traits<int> { // специализировали для int
     static void serialize(ostream &os, int x) { os.write(...); }
     static int deserialize(istream &is)       { int x; is.read(...); return x; }
 };
@@ -4716,7 +4717,7 @@ struct serialization_traits<vector<T>> {
 saveToFile("foo.txt", std::vector<int>{1, 2, 3, 4}); // Работает!
 ```
 
-Таким образом, позволили пользователям нашей библиотеки расширять её. Зачем нужно? Нам меньше писать, а пользователь библиотеки может работать с любыми типами.
+Таким образом, позволили пользователям нашей библиотеки расширять её. Зачем нужно? Нам меньше писать (не надо поддерживать все типы, которые захочет использовать пользователь), а пользователь библиотеки может легко добавить поддержку своих типов.
 
 ### Оператор `noexcept`
 Про типы всё можем узнавать, теперь давайте что-нибудь узнаем про выражения и функции.
@@ -4752,7 +4753,9 @@ template<typename T> struct optional {
 };
 ```
 
-Если же мы забыли про `std::is_nothrow_move_constructible_v<T>` (ну или просто хотим что-то более сложное) и хотим сделать такую же логику сами, то можно вызвать оператор внутри спецификатора:
+А что если у нас нет type_traits на нужное условие? Давайте посмотрим, как бы мы могли реализовать сами то, что выше, но без `std::is_nothrow_move_constructible_v<T>`. 
+
+Воспользуемся оператором `noexcept` внутри спецификатора:
 
 ```c++
 template<typename T> struct optional {
@@ -4775,7 +4778,7 @@ template<typename T> struct optional {
 ### Применение `noexcept`
 Полезно для `vector` со строгой гарантией исключений.
 
-Если у элементов `is_nothrow_move_constructible`, то можно перевыделять буфер без копирований:
+Если у элементов вектора `is_nothrow_move_constructible`, то можно перевыделять буфер без копирований:
 
 ```c++
 void increase_buffer() {
@@ -4817,7 +4820,7 @@ constexpr bool is_nothrow_move_assignable_v = noexcept(
 );
 ```
 
-Для решения этой проблемы есть `std::declval<T>()`. Она создаёт значение любого типа:
+Для решения этой проблемы есть `std::declval<T>()`. Она создаёт значение любого типа, даже если у `T` нет конструкторов:
 ```c++
 template<typename T>
 static constexpr is_nothrow_move_assignable_v = noexcept(
