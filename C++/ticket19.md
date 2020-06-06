@@ -1,22 +1,26 @@
 ## Билет 19
-Автор: Глеб Марьин
+Автор: Глеб Марьин, исправления/расширения - Игорь Энгель
 
 ### Явные (explicit) и неявные (implicit) приведения типов
 
 Как я понимаю, и как на консультации рассказал Егор: явные преобразования -
 когда явно пишем круглые, или фигурные скобки, зависит от вызываемого конструктора,
-то есть [direct initialization (cppreference)](https://en.cppreference.com/w/cpp/language/direct_initialization). Явным также является static_cast, например.
+то есть [direct initialization (cppreference)](https://en.cppreference.com/w/cpp/language/direct_initialization). Явным также является `static_cast`, например.
+
 Если же пишем равно, или принимаем в функцию, или возвзращаем из функции, то
 происходит неявное преобразование типа, то есть происходит [copy initialization (cppreference)](https://en.cppreference.com/w/cpp/language/copy_initialization#:~:text=The%20effects%20of%20copy%20initialization,destination%20object%3A%20see%20copy%20elision).
 
 Определения direct и copy из конспекта, эти виды важны в этом билете.
 
-Direct initialization: T t(foo, bar), T(foo, bar), static_cast\<T>(foo, bar), new T(foo, bar), : member(foo, bar).
-Вызов конструктора T с параметрами foo и bar.
-В C++11 добавили: T t{foo, bar};, T{foo, bar}, new T{foo, bar}, member{foo, bar}.
-Copy initialization: T t = ..;, T t = {..}, f(t), return .., throw ...
-Вызов не-explicit конструктора T с параметрами.
-В C++11 можно делать несколько параметров.
+Direct initialization: `T t(foo, bar)`, `T(foo, bar)`, `new T(foo, bar)`, `: member(foo, bar)` - Вызов конструктора `T` с параметрами `foo` и `bar`.
+
+Для конструкторов от одного аргумента - `static_cast<T>(foo)`. (`static_cast<T>(foo, bar)` это не конструктор от двух аргументов, это `static_cast<T>(foo.operator,(bar))`)
+
+В C++11 добавили: `T t{foo, bar}`, `T{foo, bar}`, `new T{foo, bar}`, `: member{foo, bar}`.
+
+Copy initialization: `T t = ..`, `T t = {..}`, `f(t)` (если `f` принимает по значению), `return ...`, `throw ...` - Вызов не-`explicit` конструктора `T` с параметрами.
+
+В C++11 можно делать несколько параметров - `T t = {foo, bar}` вызовет `T(int, int)` но не `explicit T(int, int)`
 
 Примеры:
 
@@ -44,7 +48,7 @@ int main() {
 ```C++
 struct From { ... };
 struct To {
-    From(const From &) { ... }
+    To(const From &) { ... }
 };
 ```
 
@@ -64,12 +68,12 @@ struct From {
 Эти способы абсолютно симметричны, каждая команда выбирает способ приведения,
 какой ей больше нравится (от Егора: лучше конструкторы).
 
-### Модификатор explicit для конструкторов и операторов приведения
+### Модификатор `explicit` для конструкторов и операторов приведения
 
 По умолчанию, если написан конструктор, или оператор приведения типа, то
 могут выполняться неявные преобразования к этому классу, или из него соответственно.
 Чтобы избежать нежелательных неявных преобразований, нужно использовать модификатор
-explicit, который говорит, что конструктор или оператор приведения явный.
+`explicit`, который говорит, что конструктор или оператор приведения явный.
 
 ```C++
 class A {};
@@ -89,14 +93,14 @@ int main() {
 }
 ```
 
-Без explicit неожиданные вещи могут происходить, поэтому 10 раз подумать, прежде чем
-писать не explicit оператор.
+Без `explicit` могут происходить неожиданные вещи, поэтому 10 раз подумать, прежде чем
+писать не `explicit` оператор.
 
-### Особенности explicit operator bool() по сравнению с остальными explicit-операторами
+### Особенности `explicit operator bool()` по сравнению с остальными `explicit`-операторами
 
 С лекции:
 
-Например, когда пишем свой unique_ptr, может захотеться проверять его на null, как с обычным указателем:
+Например, когда пишем свой `unique_ptr`, может захотеться проверять его на `nullptr`, как с обычным указателем:
 
 ```C++
 unique_ptr<Foo> f = ...;
@@ -105,7 +109,7 @@ if (f) { ...  }
 if (!f) { ... }
 ```
 
-Можно сделать operator bool(). Но тогда неявные преобразования врубятся вообще везде, включая: 10 + f (преобразовали в bool, преобразовали в int, сложили). В C++03 для этого использовались костыли под названием "Safe bool idiom" (там возвращали хитрый тип, который нельзя в int, но можно в bool), в C++11 можно написать explicit operator bool(). Тогда можно будет преобразовать в bool, но только явно, как с explicit конструкторами (static_cast). Конкретно для bool захардкожено, что можно использовать в: if/while/for, !, ||, &&, ?: и ещё паре мест.
+Можно сделать `operator bool()`. Но тогда неявные преобразования врубятся вообще везде, включая: `10 + f` (преобразовали в `bool`, преобразовали в `int`, сложили). В C++03 для этого использовались костыли под названием "Safe bool idiom" (там возвращали хитрый тип, который нельзя в `int`, но можно в `bool`), в C++11 можно написать `explicit operator bool()`. Тогда можно будет преобразовать в `bool`, но только явно, как с `explicit` конструкторами (`static_cast<bool>(...)`, `bool(...)`). Конкретно для `bool` захардкожено, что можно использовать в: `if`/`while`/`for`, `!`, `||`, `&&`, `?:` и ещё паре мест.
 
 И добавить нечего, могу только пример привести
 
@@ -128,25 +132,24 @@ int main() {
 ```
 
 Не уверен, что это нужно, но вроде где-то это есть.
-Можно делать шаблонные операторы приведения (ну вроде понятно, как делать конструкторы приведения). Например, написали свой BigInteger, тогда хочется написать операторы приведения к char, int, long long. В простом варианте так
+
+Можно делать шаблонные операторы приведения (ну вроде понятно, как делать конструкторы приведения). Например, написали свой `BigInteger`, тогда хочется написать операторы приведения к `char`, `int`, `long long`. В простом варианте так
 
 ```C++
 #include <cstdint>
 #include <iostream>
 
-struct BigInteger
-{
+struct BigInteger {
     std::int64_t first = 0;
     std::int64_t second = 0; // пусть храним 2 половины числа
     template <typename T>
-    operator T()
+    explicit operator T()
     {
         return first + second; // какое-то осознанное приведение к типу, это, понятно, некорректно
     }
 };
 
-int main()
-{
+int main() {
     BigInteger i;
     std::cout << static_cast<int>(i) << std::endl;
     std::cout << static_cast<long long>(i) << std::endl;
@@ -160,19 +163,17 @@ int main()
 #include <iostream>
 #include <string>
 
-struct BigInteger
-{
+struct BigInteger {
     std::int64_t first = 0;
     std::int64_t second = 0; // пусть храним 2 половины числа
     template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    operator T()
+    explicit operator T()
     {
         return first + second; // какое-то осознанное приведение к типу, это, понятно, некорректно
     }
 };
 
-int main()
-{
+int main() {
     BigInteger i;
     std::cout << static_cast<int>(i) << std::endl;
     std::cout << static_cast<long long>(i) << std::endl;
@@ -182,3 +183,24 @@ int main()
 ```
 
 Это тоже работает, я проверил.
+
+Ещё из экзотических примеров: можно использовать неявный шаблонный оператор приведения для реализации "перегрузки по возвращаемому значению":
+
+```C++
+
+struct read_by_return_val {
+    template<typename T>
+    operator T() {
+        return read<T>(); 
+    }
+}
+
+void func(std::string s) {}
+
+int main() {
+    int i = read_by_return_val(); //Вызывает read<int>()
+    func(read_by_return_val()); //вызывает read<std::string>()
+}
+```
+
+Но как и с любыми неявными операторами можно получить проблемы, особенно с `auto` или другими шаблонами.
