@@ -109,7 +109,7 @@ int main()
 #include <algorithm>
 #include <iostream>
 #include <vector>
- 
+
 int main()
 {
     std::vector<int> v{ 1, 2, 3, 4, 4, 3, 7, 8, 9, 10 };
@@ -123,12 +123,7 @@ int main()
     std::cout << "number: " << target2 << " count: " << num_items2 << '\n';
  
     // use a lambda expression to count elements divisible by 3.
-    int if (result2 != std::end(v)) {
-        std::cout << "v contains: " << n2 << '\n';
-    } else {
-        std::cout << "v does not contain: " << n2 << '\n';
-    }
-} num_items3 = std::count_if(v.begin(), v.end(), [](int i){return i % 3 == 0;});
+    int num_items3 = std::count_if(v.begin(), v.end(), [](int i){return i % 3 == 0;});
     std::cout << "number divisible by three: " << num_items3 << '\n';
 }
 ```
