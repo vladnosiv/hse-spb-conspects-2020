@@ -5733,7 +5733,7 @@ struct stack<bool> { // Для конкретных параметров.
 ```
 
 ### Частичная специализация
-```
+```С++
 template<typename T> struct unique_ptr {
     T *data;
     ~unique_ptr() { delete data; }
@@ -5749,7 +5749,7 @@ template<typename T> struct unique_ptr<T[]> {
 
 ### Немного type traits
 Так можно делать вычисления над типами и значениями на этапе компиляции:
-```
+```С++
 template<typename T> struct is_reference { constexpr static bool value = false; };
 template<typename T> struct is_reference<T&> { constexpr static bool value = true; };
 template<typename T> struct is_reference<T&&> { constexpr static bool value = true; };
@@ -5760,7 +5760,7 @@ printf("%d\n", is_reference<int&>::value);
 Это один из способов реализовывать `<type_traits>` (второй будет в 4 модуле, называется SFINAE).
 
 Ещё пример:
-```
+```С++
 template<typename U, typename V> struct is_same { constexpr static bool value = false; };
 template<typename T> struct is_same<T, T> { constexpr static bool value = true; };
 ```
@@ -5771,12 +5771,12 @@ template<typename T> struct is_same<T, T> { constexpr static bool value = true; 
 
 ## Специализация функций
 Для функций есть только полная специализация:
-```
+```С++
 template<> void swap(Foo &a, Foo &b) { ... }
 ```
 Частичной нет.
 Вместо неё предполагается использовать перегрузки, если очень надо:
-```
+```С++
 template<typename T> void swap(vector<T> &a, vector<T> &b) { ... }
 ```
 По техническим причинам это не всегда хорошо, правда, но таков факт жизни.
@@ -5788,7 +5788,7 @@ template<typename T> void swap(vector<T> &a, vector<T> &b) { ... }
 Но надо вернуть что-то такое, чтобы `a[i] = false;` работало.
 В C++03 и раньше хорошей идеей были прокси-объекты:
 
-```
+```С++
 template<>
 struct vector<bool> {
 private:
@@ -5824,14 +5824,14 @@ public:
 
 ## Tag dispatching
 * Хотим сделать свой `std::next`:
-  ```
+  ```С++
   template<typename It>
   It my_next(/*std::random_access_iterator_tag, */It x, typename It::difference_type count) {
       return x += count;
   }
   ```
 * Тут работает только для RandomAccess. Для ForwardIterator:
-  ```
+  ```С++
   template<typename It>
   It my_next(/*std::forward_iterator_tag, */It x, typename It::difference_type count) {
       for (; count; --count)
@@ -5845,7 +5845,7 @@ public:
   Так можно надо на этапе компиляции поставить `if`.
   Можно добавить фиктивный параметр и сделать перегрузки,
   а общую реализацию такую:
-  ```
+  ```С++
   template<typename It>
   It my_next(It x, typename It::difference_type count) {
       return my_next(typename It::iterator_category(), x, count);
