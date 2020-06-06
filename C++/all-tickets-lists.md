@@ -273,7 +273,7 @@ throw my_exception("Foo");
 
 <details>
 <summary>
- Билет 02
+ Билет 02 "namespaces"
 </summary>
 
 Автор: Носивской Влад
@@ -542,7 +542,7 @@ IncompleteClass p; // не ОК
 
 <details>
 <summary>
- Билет 04
+ Билет 04 "ADL"
 </summary>
 
 Автор: Влад Носивской
