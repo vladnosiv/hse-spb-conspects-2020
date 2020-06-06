@@ -22,6 +22,24 @@
 Если что-то не нашёл, то обычно возвращается end()/last.
 
 #### Примеры немодифицирующих, сравнивающих, модифицирующих алгоритмов
+##### Немодифицирующие
+Рассмотрим первую группу, которая проверяет выполнен ли предикат для каждого из элементов диапазона first - last  
+[Если нужно - cppreference](https://en.cppreference.com/w/cpp/algorithm/all_any_none_of)
+* `bool all_of(first, last, pred)` - унарный предикат выполняется для всех элементов
+* `bool any_of(first, last, pred)`- унарный предикат выполняется для какого-то из элементов
+* `bool none_of(first, last, pred)` - унарный предикат не выполняется ни для какого из элементов  
+```C++
+struct DivisibleBy // проверяет делится ли число на d
+{
+   const int d;
+   DivisibleBy(int n) : d(n) {}
+   bool operator()(int n) const { return n % d == 0; }
+};
+ 
+if (std::any_of(v.cbegin(), v.cend(), DivisibleBy(7))) {
+   std::cout << "At least one number is divisible by 7\n";
+}
+```
 #### Erase-remove idiom, встроенный метод для list, своя реализация remove_if
 #### Двоичный поиск: отличия lower_bound и upper_bound
 #### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
