@@ -4673,7 +4673,7 @@ OutputIt transform(InputIt1 first1, InputIt1 last1, InputIt2 first2,
 * `sort` (необязательно стабильный, гарантированный NlogN, если долго работает quicksort, то запускается mergesort)/`stable_sort`(может выделять себе память, работает дольше, чаще всего представляет из себя mergesort)/`nth_element` (k-ая порядковая статистика)
 
 Из numeric library:  
-* `OutputIt partial_sum( InputIt first, InputIt last, OutputIt d_first );` - считает частичные суммы  
+* `OutputIt partial_sum( InputIt first, InputIt last, OutputIt d_first );` - считает частичные суммы
 Пример: 
 ```C++
 #include <numeric>
@@ -4732,9 +4732,114 @@ int main()
 }
 ```
 #### Erase-remove idiom, встроенный метод для list, своя реализация remove_if
-#### Двоичный поиск: отличия lower_bound и upper_bound
-#### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
+##### Erase-remove idiom
+Существуют функции, которые как-то "сужают" наш контейнер, наприме, remove. 
+Пусть мы хотим удалить из вектора все `10`, тогда воспользуемся:  
+`remove(v.begin(), v.end(), 10)`. Однако, на самом деле он не удаляет элементы, а просто группирует те, которые хочет оставить в начало контейнера. А в конце остается какой-то мусор. Специально для этого такие алгоритмы возвращают итераторы на новый последний элемент. Тогда в нашем случае мы сможем просто сделать `erase(remove(v.begin(), v.end(), 10), v.end())`
+Опишем теперь общую схему подобных алгоритмов:  
+* `{remove}{,_copy}{,_if}: (first, last, [out], value|pred)`, возвращает итератор на конец.
+* `{replace}{,_copy}{,_if}: (first, last, [out], old_value|pred, new_value)`, возвращает итератор на конец.
+* `unique{,_copy}(f, l, [pred])`, удаляет подряд идущие одинаковые.  
+Опишем пару примеров: 
+```C++ 
+#include <algorithm>
+#include <iterator>
+#include <string>
+#include <iostream>
+int main()
+{
+    std::string str = "Text with some   spaces";
+    std::cout << "before: " << str << "\n"; // before: Text with some   spaces
+ 
+    std::cout << "after:  ";
+    std::remove_copy(str.begin(), str.end(),
+                     std::ostream_iterator<char>(std::cout), ' ');
+    std::cout << '\n'; // after:  Textwithsomespaces
 
+}
+```
+Здесь у нас просто скопировались все нужные элементы(то есть не пробел)
+Примеры на erase-remove idiom 
+```C++ 
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <string>
+#include <cctype>
+ 
+int main() 
+{
+    // a vector containing several duplicate elements
+    std::vector<int> v{1,2,1,1,3,3,3,4,5,4};
+ 
+    // remove consecutive (adjacent) duplicates
+    auto last = std::unique(v.begin(), v.end());
+    // v now holds {1 2 1 3 4 5 4 x x x}, where 'x' is indeterminate
+    v.erase(last, v.end()); 
+    for (int i : v)
+      std::cout << i << " ";
+    std::cout << "\n";
+ 
+    // sort followed by unique, to remove all duplicates
+    std::sort(v.begin(), v.end()); // {1 1 2 3 4 4 5}
+    last = std::unique(v.begin(), v.end());
+    // v now holds {1 2 3 4 5 x x}, where 'x' is indeterminate
+    v.erase(last, v.end()); 
+    for (int i : v)
+      std::cout << i << " ";
+    std::cout << "\n";
+ 
+}
+```
+```C++
+vector<int> v = { 1, 3, 2, 3 };
+v.erase(remove_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; }), v.end());
+v.erase(unique(v.begin(), v.end()), v.end());
+```
+Аккуратнее с вектором при `remove_copy` в него: или сделайте `resize` вектора, а потом в конце `erase` или пушбекайте. 
+
+Поговорим теперь про `list`:  
+* Двусвязный список, удаление всегда за линию от количества элементов.
+* Нельзя random access, итераторы и указатели не инвалидируются. Можно идти с начала, можно идти с конца за константу.
+* Можно перемещать элементы из одного списка в другой:
+  splice(pos, x) (если x != this): утащили все элементы из x (это контейнер или итератор из одного элемента) в позицию pos. Итераторы и ссылки тоже переехали. Всё за константу.
+* splice(pos, begin, end): перетащили внутри себя элементы за константу на другое место. А если это был другой список, то линия (потому что надо пересчитать size; до C++11 было по-другому(там размер считался за линию, поэтому могло возникать: `for (size_t i = 0; i < l.size(); i++)` - работает за квадрат :) ).
+* Есть методы: remove, remove_if, unique, merge, reverse, стабильный sort: аналогично алгоритмам, но не инвалидируют(потому что в связи с особенностью `list` мы можем не переставлять всe элементы, потом выкинуть, а можно просто честно переставить указатели. Но так как нам тогда требуется доступ ко внутренностям, то это уже методы `list`.
+
+Хочется использоваться функцию `remove_if`, например, чтобы удалить все четные элементы в листе. Но обычный мы использовать не будем, так как не хотим переставлять элементы. Воспользуемся тем, что `erase`- возвращает итератор на следующий элемент. Поэтому возможен такой код:  
+```C++
+// values == {5, 7, 10, 15}
+//                  ^------- удаляем
+//                       ^-- erase возвращает следующий элемент
+for (auto it = values.begin(); it != values.end();) {
+    if (*it % 2 == 0) { //или какой-то ваш предикат f(*it)
+*       it = values.erase(it);
+        assert(*it == 15);
+    } else {
+        ++it;
+    }
+}	
+```
+#### Двоичный поиск: отличия lower_bound и upper_bound
+Требуется, чтобы элементы были отсортированны с точки зрения предиката меньше, или с точки зрения своего собственного предиката, который мы можем передать в качестве доп параметра.   
+
+```C++
+bool binary_search( ForwardIt first, ForwardIt last, const T& value );
+//проверяет, если value в range
+std::pair<ForwardIt,ForwardIt>
+    equal_range( ForwardIt first, ForwardIt last,
+                 const T& value );
+//укажет диапазон, в котором лежит value, соответственно,
+ //правая граница будет невключительно(элемент, следующий за value)
+```
+Выведем теперь `lower_bound` и `upper_bound`  
+```C++
+lower_bound = equal_range.first //first i : a_i >= v
+upper_bound = equal_range.second //first i : a_i > v
+```
+Соответственно, если все элементы меньше, чем искомый, то вернет просто `end()/last` 
+#### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
+Поскольку у нас не RandomAccess итератор, то мы не можем использовать стандартный бинпоиск - он отработает не за логарифм, а за линейную сложность. (то есть в обычном мы бы позвали  `it += k`, а в нашем случае много раз прибавим 1). Поэтому существуют специальные методы, например, у `set` есть свои методы: `iterator lower_bound (const value_type& val);` 
 
 
 </details>
