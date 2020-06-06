@@ -5103,9 +5103,9 @@ Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
 
 <details>
 <summary>
+# Билет 32 (Виды инициализации)
 </summary>
 
-# Билет 32 (Виды инициализации)
 
 Автор: Таня Гордеева
 
@@ -5132,9 +5132,6 @@ Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
       int x = f.x;  // UB
   }
   ```
-  
----
-
 ## Direct, copy, list инициализация: когда какая вызывается
 * **Copy initialization**:
   * `T t = ..;`, `T t = {..}`, `f(t)`, `return ..`, `throw ..`.
