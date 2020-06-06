@@ -43,7 +43,7 @@ if (std::any_of(v.cbegin(), v.cend(), DivisibleBy(7))) {
 ```  
 Следующая группа - это такие алгоритмы, которые насчитывают что-то для всех элементов из диапазона \[first, last)  
 * `UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f )`[ссылка](https://en.cppreference.com/w/cpp/algorithm/for_each)
-* `InputIt for_each_n(InputIt first, Size n, UnaryFunction f)` [ссылка](https://en.cppreference.com/w/cpp/algorithm/for_each_n)
+* `InputIt for_each_n(InputIt first, Size n, UnaryFunction f)` [ссылка](https://en.cppreference.com/w/cpp/algorithm/for_each_n)  
 
 Первый из них для каждого элемента применяет предикат, а после его возвращает(`std::move`) (может и не возвращать ничего, если это нам не нужно). Это сделано, чтобы, например, можно было насчитать фунцию на всех элементах, а потом получить результат и работать с ним.
 Пример для этого:
@@ -62,7 +62,7 @@ int main()
 {
     std::vector<int> nums{3, 4, 2, 8, 15, 267};
  
-    auto printFirst mismatching elements: 30 and 80 = [](const int& n) { std::cout << " " << n; };
+    auto print = [](const int& n) { std::cout << " " << n; };
  
     std::cout << "before:";
     std::for_each(nums.cbegin(), nums.cend(), print); // 3 4 2 8 15 267
@@ -102,7 +102,7 @@ int main()
 Есть две разновидности: 
 * `difference_type count(first, last, value) // считает элемент, которые равны value(вызывает operator==)` 
 * `difference_type count_if(first, last, pred) // считает элемент, которые удовлетворяют предикату` 
-`difference_type` -##### Немодифицирующие
+`difference_type` -
  то, что вернет разность итераторов у конкретного контейнера. 
 Пример: 
 ```C++
