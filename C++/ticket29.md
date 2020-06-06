@@ -97,11 +97,13 @@ int main()
     std::cout << '\n'; // 2, 4, 6, 4, 5,
 }
 ```
-Следующая группа - это посчитать количество элементов в диапазоне \[first, last). [ссылка] (https://en.cppreference.com/w/cpp/algorithm/count)
+Следующая группа - это посчитать количество элементов в диапазоне \[first, last). 
+[ссылка](https://en.cppreference.com/w/cpp/algorithm/count)
 Есть две разновидности: 
 * `difference_type count(first, last, value) // считает элемент, которые равны value(вызывает operator==)` 
 * `difference_type count_if(first, last, pred) // считает элемент, которые удовлетворяют предикату` 
-`difference_type` - то, что вернет разность итераторов у конкретного контейнера. 
+`difference_type` -##### Немодифицирующие
+ то, что вернет разность итераторов у конкретного контейнера. 
 Пример: 
 ```C++
 #include <algorithm>
@@ -130,7 +132,8 @@ int main()
     std::cout << "number divisible by three: " << num_items3 << '\n';
 }
 ```
-Следующая группа алгоритмов - это какие-то алгоритмы для поиска. Их тоже 3 вида: 
+Следующая группа алгоритмов - это какие-то алгоритмы для поиска. [ссылка](https://en.cppreference.com/w/cpp/algorithm/find) 
+Их тоже 3 вида: 
 * `InputIt find( InputIt first, InputIt last, const T& value );`Ищет первый элемент, равный `value`
 * `InputIt find_if( InputIt first, InputIt last, UnaryPredicate p );`Ищет первый элемент, удовлетворяющий предикату
 * `InputIt find_if_not( InputIt first, InputIt last, UnaryPredicate q );`Ищет первый элемент, не удовлетворяющий предикату
@@ -165,6 +168,92 @@ int main()
     }
 }
 ```
+##### Сравнивающие
+Тоже немодифицирующие, но есть тонкость, поэтому разберем их отдельно
+`min`[ссылка](https://en.cppreference.com/w/cpp/algorithm/min)/`max`
+[ссылка](https://en.cppreference.com/w/cpp/algorithm/max)/
+`minmax`[ссылка](https://en.cppreference.com/w/cpp/algorithm/minmax) 
+* `constexpr const T& min( const T& a, const T& b );`
+* `constexpr const T& min( const T& a, const T& b, Compare comp );`
+Возвращает ссылку/пару ссылок для `minmax` на минимум/максимум 
+Важная тонкость: 
+```C++
+const Foo &x = foo();  // Работает. Продлили время жизни временного объекта
+const Foo &x = std::min(foo1(), foo2());  /* Не работает, потому что lifetime extension 
+ только с самым внешним значением. 
+A то, что вернулось(аргумент min) - у них время жизни уже не продлится.
+```
+* ` const T& clamp( const T& v, const T& lo, const T& hi)` — обрезаем значение. Возвращает ссылку. Есть еще версия с компаратором. Нельзя ставить, что `lo > hi`. Алгоритм берет и выставляет элемент между двумя этими границами включительно.  
+Возможная реализация для понимания с [cppref](https://en.cppreference.com/w/cpp/algorithm/clamp)
+```C++
+template<class T>
+constexpr const T& clamp( const T& v, const T& lo, const T& hi )
+{
+    assert( !(hi < lo) );
+    return (v < lo) ? lo : (hi < v) ? hi : v;
+}
+```
+* `equal(f1, l1, f2[, pred])` Проверяет, что на данном предикате(по умолчанию ==) все элементы "равны". При этом мы должны сами проследить, что второй range такой же. Вообще, это достаточно частое явление в std, что конец второго range отсутствует. 
+Ещё есть лексикографическое меньше (для него нужен конец второго, потому что сравнению строк это важно). 
+Красивый пример проверки на палиндром: 
+```C++
+#include <algorithm>
+#include <iostream>
+#include <string>
+ 
+bool is_palindrome(const std::string& s)
+{
+    return std::equal(s.begin(), s.begin() + s.size()/2, s.rbegin());
+}
+ 
+void test(const std::string& s)
+{
+    std::cout << "\"" << s << "\" "
+        << (is_palindrome(s) ? "is" : "is not")
+        << " a palindrome\n";
+}
+ 
+int main()
+{
+    test("radar"); //"radar" is a palindrome
+    test("hello"); // "hello" is not a palindrome
+}
+```
+* `std::pair<> mismatch(first1, last1, first2)`, первое место с отличием. Возвращает пару итераторов, в которых раличаются 2 range 
+```
+// mismatch algorithm example
+#include <iostream>     // std::cout
+#include <algorithm>    // std::mismatch
+#include <vector>       // std::vector
+#include <utility>      // std::pair
+
+bool mypredicate (int i, int j) {
+  return (i==j);
+}
+
+int main () {
+  std::vector<int> myvector;
+  for (int i=1; i<6; i++) myvector.push_back (i*10); // myvector: 10 20 30 40 50
+
+  int myints[] = {10,20,80,320,1024};                //   myints: 10 20 80 320 1024
+
+  std::pair<std::vector<int>::iterator,int*> mypair;
+
+  // using default comparison:
+  mypair = std::mismatch (myvector.begin(), myvector.end(), myints);
+  std::cout << "First mismatching elements: " << *mypair.first;
+  std::cout << " and " << *mypair.second << '\n'; // First mismatching elements: 30 and 80
+
+  ++mypair.first; ++mypair.second;
+
+  // using predicate comparison:
+  mypair = std::mismatch (mypair.first, myvector.end(), mypair.second, mypredicate);
+  std::cout << "Second mismatching elements: " << *mypair.first;
+  std::cout << " and " << *mypair.second << '\n'; // Second mismatching elements: 40 and 320
+  return 0;
+}
+```
+* `min_element, max_element, minmax_element` — первый минимум/максимум. Возвращают итератор(или пару из итераторов). Пример, когда вектор непустой: `vec.erase(min_element(vec.begin(), vec.end()));` Заметим, что в случае пустого вектора - плохо, так как `min_element(vec.begin(), vec.end())` отработает корректно и вернет итератор на `vec.end()`, но вот извлечь у нас уже не получится
 #### Erase-remove idiom, встроенный метод для list, своя реализация remove_if
 #### Двоичный поиск: отличия lower_bound и upper_bound
 #### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
