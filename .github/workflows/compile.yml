@@ -21,7 +21,15 @@ jobs:
     - uses: actions/checkout@v2
       
     - name: Concatenate all the tickets into all-tickets.md
-      run: cat C++/ticket??.md C++/ticketOver.md > C++/all-tickets.md
+      run: |
+        > C++/all-tickets.md
+        for ticket in ticket*.md; do 
+          echo -e "<details>\n<summary>\n" >> C++/all-tickets.md
+          cat "$ticket" | sed -nr "1s/^##(.*)/\1/p" >> C++/all-tickets.md
+          echo -e "</summary>\n" >> C++/all-tickets.md
+          cat "$ticket" | sed '1d' >> C++/all-tickets.md
+          echo -e "</details>\n\n" >> C++/all-tickets.md
+        done
     
     - name: Commit and push
       run: |
