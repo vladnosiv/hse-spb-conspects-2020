@@ -4481,8 +4481,8 @@ string c = std::get<2>(t1);  // Цикла по tuple<> нет
 
 Теперь подробнее про функции, связанные с `std::tuple`:
 
-* `std::get<index>(tuple)`. Получает элемент с номером `index` из `tuple`. Важно: `index` должен быть `constexpr` и находиться в полуинтервале `[0, std::tuple_size(tuple))`.
-* `std::tuple_size(tuple)` возращает размер кортежа.
+* `std::get<index>(tuple)`. Получает элемент с номером `index` из `tuple`. Важно: `index` должен быть `constexpr` и находиться в полуинтервале `[0, std::tuple_size<tuple>::value)`.
+* `std::tuple_size<tuple>::value` возращает размер кортежа.
 * `std::tuple_element<size_t I, template Tuple>::type` возвращает тип `Tuple` на позиции `I`. Возможное применение:
 ```cpp
 auto mytuple = std::make_tuple (10, 'a');
@@ -4524,6 +4524,7 @@ assert(first == 1);
 assert(second == 2);
 assert(third == 'a');
 ```
+Примечание: `std::tie` появился в C++11, но возможно реализовать уже с C++03.
 
 ### Structured binding (базовое)
 Это более современная замена `std::tie`. Синтаксис:
