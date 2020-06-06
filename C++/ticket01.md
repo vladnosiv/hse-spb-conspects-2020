@@ -54,8 +54,8 @@ struct Foo {
 ```C++
 // foo.h
 struct Foo {
-static const int N = 60; // объявление
-static constexpr char Name[] = "NAME"; // объявление (аналогичное поведение до C++17)
+    static const int N = 60; // объявление
+    static constexpr char Name[] = "NAME"; // объявление (аналогичное поведение до C++17)
 }
 // fst.cpp
 const int Foo::N; // инициализация и слово `statuc` не нужны
@@ -71,13 +71,41 @@ constexpr char Name[]; // в заголовочном файле не опред
 ... &Foo::Name[0] ... // ОК
 ```
 
-Самое важное: **если можем, то ставим constexpr, а в заголовках еще пишем inline**.
+* Про `static` и `inline`:
+
+Если не писать inline, то необходимо эту константу определить ровно в одном cpp файле, иначе ошбка компиляции (пример выше). Если в двух и более файлах написали определение, то ошибка компиляции.
+
+Если пишем inline, то больше ничего определять не нужно.
 
 ```C++
+// foo.h
+struct Foo {
+static inline const int N = 60;
+static inline constexpr char Name[] = "NAME";
+}
+// fst.cpp
+... Foo::N ... // ОК
+... Foo::Name[0] ... // ОК
+... &Foo::N ... // ОК
+... &Foo::Name[0] ... // ОК
+// snd.cpp
+... Foo::N ... // ОК
+... Foo::Name[0] ... // ОК
+... &Foo::N ... // ОК
+... &Foo::Name[0] ... // ОК
+```
+
+Самое важное: **если можем, то ставим constexpr, а в заголовках еще пишем inline**.
+
+Как правильно по мнению Егора писать константы:
+
+```C++
+// в классах
 struct Foo {
     static inline const std::string NO = "NO"
     static inline constexpr char YES[] = "YES"
 }
+// не в классах
 inline const std::string NO = "NO"
 inline constexpr char YES[] = "YES"
 ```
