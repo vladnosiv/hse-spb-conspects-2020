@@ -30,7 +30,7 @@ void fry() {
 slice();
 ... // Здесь не ищем
 }
-... // И здесь (2)
+... // Здесь мы ищем, т. к. это класс (2)
 }
 ... // Здесь тоже не ищем
 }
@@ -74,7 +74,7 @@ class IncompleteClass; // forward declaration, неполный класс
 void foo1(const IncompleteClass* p); // ОК
 void foo2(const IncompleteClass& p); // ОК
 void foo3(IncompleteClass p); // ОК
-void foo4(IncompleteClass p); // не ОК, определение функции
+void foo4(IncompleteClass p) {}; // не ОК, определение функции
 
 IncompleteClass* p; // ОК
 IncompleteClass p; // не ОК
