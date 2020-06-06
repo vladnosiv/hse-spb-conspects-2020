@@ -26,7 +26,7 @@
 		z = s.notes;
 		```
 
-	* Если есть using `Music::date`, то можно через `.` обращаться к date без `Music::`
+	* Если есть `using Music::date`, то можно через `.` обращаться к date без `Music::`
 
 		``` C++
 		x = s.date;
