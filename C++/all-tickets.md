@@ -6934,30 +6934,24 @@ typename apply_type_list<tuple, type_list<int, string>>::type == tuple<int, stri
 
 ### Pattern matching + специализации для обработки элементов пака у классов
 
-Допустим мы хотим передавать паки в качестве аргументов. Это можно сделать так:
+Рассмотрим пример реализации `std::tuple_element`:
 
 ```C++
-template<typename T, typename ...Args>
-void wrap(const Args &...args) {
-    T x(args...);
-    new T(args...);
-    someOtherFunc(args..., 20, args...);
-}
-wrap<Foo>();         // T=Foo, Args={},          someOtherFunc(20);
-wrap<Foo>(15, 'x');  // T=Foo, Args={int, char}, someOtherFunc(15, 'x', 20, 15, 'x');
+template<std::size_t, typename /*Tuple*/> struct tuple_element;
+// Базовый случай.
+template<typename Head, typename ...Tail>
+struct tuple_element<0, tuple<Head, Tail...>> {
+    using type = Head;
+};
+// Основной случай.
+template<std::size_t I, typename Head, typename ...Tail>
+struct tuple_element<I, tuple<Head, Tail...>> : tuple_element<I - 1, tuple<Tail...>> {};
+// ....
+tuple_element<0, tuple<int, string>> = int
+tuple_element<1, tuple<int, string>> = tuple_element<0, tuple<string>> = string
 ```
 
-Или воспользоваться pattern matching (стоит помнить, что `...` имеют самый низкий приоритет):
-
-```C++
-increaseByTen(1, 2, 3);
-template<typename ...Args>
-int increaseByTen(Args ...args) {
-    foo((10 + args)...);    // foo(10 + 1, 10 + 2, 10 + 3);
-    foo(10 + args...);      // foo(10 + 1, 10 + 2, 10 + 3); по причине низкого прироитета
-    foo((args + args)...);  // foo( 1 + 1,  2 + 2,  3 + 3);
-}
-```
+Здесь pattern matching для поиска нужной перегрузки.
 
 ### Pattern matching + автовывод параметров + перегрузки для обработки элементов пака у функций
 
