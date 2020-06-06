@@ -3171,7 +3171,7 @@ constexpr typename std::remove_reference<_Tp>::type&& move(_Tp&& __t) noexcept{
 * ### Правило пяти
   После появления move-семантики знакомое нам правило трех превратилось в правило пяти: к конструктору копирования, оператору присваивания и деструктору добавились конструктор перемещения и оператор присваивания перемещением.
 
-  * Простенький пример
+  *  Пример. Считаем, что `Person` валиден, если имя не `nullptr`.
   ```C++
   struct Person {
       char* name;
@@ -3179,32 +3179,39 @@ constexpr typename std::remove_reference<_Tp>::type&& move(_Tp&& __t) noexcept{
       // Destructor
       ~Person() { delete[] name; }
       // Copy constructor
-      Person(Person const& other)
-          : name(new char[std::strlen(other.name) + 1]), age(other.age) {
+      Person(Person const& other) : name(nullptr), age(0) {
+          assert(other.name != nullptr);
+          name = new char[std::strlen(other.name) + 1];
           std::strcpy(name, other.name);
+          age = other.age;
       }
       // Copy assignment operator
       Person & operator=(const Person &other) {
           if (&other == this)
             return *this;
-          delete[] name;
-          name = new char[std::strlen(other.name) + 1];
-          std::strcpy(name, other.name);
+          assert(other.name != nullptr);
+          char *newName = new char[std::strlen(other.name) + 1];
+          std::strcpy(newName, other.name);
+          std::swap(name, newName);
           age = other.age;
+          delete[] newName;
           return *this;
       }
       // Move constructor
       Person(Person&& other) noexcept : name(nullptr), age(0) {
-          swap(*this, other);
+          swap(*this, other); // Нужно либо писать свой swap, либо swap полей отдельно
       }
       // Move assignment operator
       Person & operator=(Person&& other) noexcept {
-          swap(*this, that);
+          swap(*this, other);
           return *this;
       }
   };
-```
+  ```
+
   * В примере выше можно заменить операторы присваивания на один `Person& operator=(Person other)` и воспользоваться идеей copy and swap, однако возникают проблемы с гарантиями исключений. В этом случае правило пяти становится правилом четырех.
+
+  * Вообще правило пяти нужно достаточно редко, правило нуля работает почти всегда. Возможное разумное использование - обертка какого-нибудь C-кода (вспомним сепульку).
 ## Билет 23
 Автор: Валера Головин
 ### Оборачивание кода библиотечным
