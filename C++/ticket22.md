@@ -52,7 +52,7 @@
   };
   ```
 
-* ### Типичная реализация конструктора с компировниями
+* ### Типичная реализация конструктора с копировниями
 
   * Простой пример
   ```C++
@@ -68,10 +68,10 @@
   * Подобные вещи могут происходить и в других методах класса (почему-то в интернете есть примеры лишь на констркуктор, но то же самое можно делать в set-методах, например).
 
 * ### Rvalue-ссылки
-  Пояснения что такое lvalue, rvalue и компания должны быть в билете 21. Обычные ссылки привязываются только к lvalue значениям, константные к чему угодно. В C++11 появляются rvalue-ссылки: `Foo &&x = foo();` (это лишь демонстрация синтаксиса, в данной ситуации код не имеет смысла, т.к. объект умрет и `x` сошлется в мертвый объект). Они привязываются только к rvalue (xvalue, prvalue). Важно не путаться с ***forwarding reference*** `template<typename T> void foo (T &&x) // "Forvanding referece"`, см. билет 23.
+  Пояснения что такое lvalue, rvalue и компания должны быть в билете 21. Обычные ссылки привязываются только к lvalue значениям, константные к чему угодно. В C++11 появляются rvalue-ссылки: `Foo &&x = foo();` (это лишь демонстрация синтаксиса, в данной ситуации код не имеет смысла, т.к. объект умрет и `x` сошлется в мертвый объект). Они привязываются только к rvalue (xvalue, prvalue). Важно не путаться с ***forwarding reference*** `template<typename T> void foo (T &&x) // "Forwanding referece"`, см. билет 23.
 
 * ### Правила привязывания ссылок
-  * `Foo &f = ..; // glvalue, CE для prvalue`
+  * `Foo &f = ..; // lvalue, CE для rvalue`
   * `const Foo &f = ..; // что угодно, попытается продлить жизнь у prvalue`
   * `Foo &&f = ..; // только rvalue`
 
@@ -138,3 +138,38 @@
 
 * ### Правило пяти
   После появления move-семантики знакомое нам правило трех превратилось в правило пяти: к конструктору копирования, оператору присваивания и деструктору добавились конструктор перемещения и оператор присваивания перемещением.
+
+  * Простенький пример
+  ```C++
+  struct Person {
+      char* name;
+      int age;
+      // Destructor
+      ~Person() { delete[] name; }
+      // Copy constructor
+      Person(Person const& other)
+          : name(new char[std::strlen(other.name) + 1]), age(other.age) {
+          std::strcpy(name, other.name);
+      }
+      // Copy assignment operator
+      Person & operator=(const Person &other) {
+          if (&other == this)
+            return *this;
+          delete[] name;
+          name = new char[std::strlen(other.name) + 1];
+          std::strcpy(name, other.name);
+          age = other.age;
+          return *this;
+      }
+      // Move constructor
+      Person(Person&& other) noexcept : name(nullptr), age(0) {
+          swap(*this, other);
+      }
+      // Move assignment operator
+      Person & operator=(Person&& other) noexcept {
+          swap(*this, that);
+          return *this;
+      }
+  };
+```
+  * В примере выше можно заменить операторы присваивания на один `Person& operator=(Person other)` и воспользоваться идеей copy and swap, однако возникают проблемы с гарантиями исключений. В этом случае правило пяти становится правилом четырех.
