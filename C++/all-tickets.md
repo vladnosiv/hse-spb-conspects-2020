@@ -3077,13 +3077,13 @@ constexpr typename std::remove_reference<_Tp>::type&& move(_Tp&& __t) noexcept{
   * Для вектора, например, можно сделать 3 перегрузки `operator[]`
   ```C++
   struct vector {
-      const T& operator[](size_t) const; // T var1 = v[i];
+      const T& operator[](size_t) const&; // T var1 = v[i];
       T& operator[](size_t) &; // v[i] = var2;
       T&& operator[](size_t) &&; // Объект умрет, поэтому можно соптимизировать
           // и сделать move из нужного элемента.
   };
   ```
-
+  * Если добавили метод `T foo() &` или `T foo() &&`, то они будут конфликтовать с `T foo()` и `T foo() const`.
 * ### Типичная реализация конструктора с копировниями
 
   * Простой пример
