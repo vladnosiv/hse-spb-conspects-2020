@@ -1387,6 +1387,12 @@ int main() {
 `application will terminate`, возможно `std::abort`, или `std::terminate`.
 Так что в этом случае я бы сказал, что не будет гарантии исключений,
 хотя вопрос философский, и уверен, что эти дебри не нужны для экзамена.
+
+Взято с [isocpp.org](https://isocpp.org/wiki/faq/exceptions#dtors-shouldnt-throw)
+> So the C++ language guarantees that it will call terminate() at this point, and terminate() kills the process. Bang you’re dead.
+
+По ссылке можно посмотреть подробнее про обработку исключений.
+
 Если методы класса не предоставляют какой-то гарантии, то мы,
 работая с ними, не можем её предоставить. Например, пишем
 
