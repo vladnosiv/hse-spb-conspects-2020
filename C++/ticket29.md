@@ -253,7 +253,25 @@ int main () {
   return 0;
 }
 ```
-* `min_element, max_element, minmax_element` — первый минимум/максимум. Возвращают итератор(или пару из итераторов). Пример, когда вектор непустой: `vec.erase(min_element(vec.begin(), vec.end()));` Заметим, что в случае пустого вектора - плохо, так как `min_element(vec.begin(), vec.end())` отработает корректно и вернет итератор на `vec.end()`, но вот извлечь у нас уже не получится
+* `min_element, max_element, minmax_element` — первый минимум/максимум. Возвращают итератор(или пару из итераторов). Пример, когда вектор непустой: `vec.erase(min_element(vec.begin(), vec.end()));` Заметим, что в случае пустого вектора - плохо, так как `min_element(vec.begin(), vec.end())` отработает корректно и вернет итератор на `vec.end()`, но вот извлечь у нас уже не получится  
+* Из numeric library:
+`accumulate(first, last, init = 0)` для operator+ - возвращает сумму всех элементов, можем задать начальное значение и, например, сконкатенировать все строки в диапазоне
+`T accumulate( InputIt first, InputIt last, T init, BinaryOperation op );` - можно задавать свой бинарный оператор. 
+C C++20 в обоих случаях будет добавляться std::move() к тому, что у нас суммируется. Например, сама сумма в конкретный момент времени будет перемещаться, чтобы избежать копирований, то есть, предполагаемый вид: 
+```
+template<class InputIt, class T, class BinaryOperation>
+constexpr // since C++20
+T accumulate(InputIt first, InputIt last, T init, 
+             BinaryOperation op)
+{
+    for (; first != last; ++first) {
+        init = op(std::move(init), *first); // std::move since C++20
+    }
+    return init;
+}
+```
+##### Модифицирующие
+
 #### Erase-remove idiom, встроенный метод для list, своя реализация remove_if
 #### Двоичный поиск: отличия lower_bound и upper_bound
 #### Особенности использования двоичного поиска для не-RandomAccess итераторов, в том числе для set
