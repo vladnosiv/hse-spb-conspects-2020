@@ -52,7 +52,7 @@
   };
   ```
 
-* ### Типичная реализация конструктора с компировниями
+* ### Типичная реализация конструктора с копировниями
 
   * Простой пример
   ```C++
@@ -138,3 +138,38 @@
 
 * ### Правило пяти
   После появления move-семантики знакомое нам правило трех превратилось в правило пяти: к конструктору копирования, оператору присваивания и деструктору добавились конструктор перемещения и оператор присваивания перемещением.
+
+  * Простенький пример
+  ```C++
+  struct Person {
+      char* name;
+      int age;
+      // Destructor
+      ~Person() { delete[] name; }
+      // Copy constructor
+      Person(Person const& other)
+          : name(new char[std::strlen(other.name) + 1]), age(other.age) {
+          std::strcpy(name, other.name);
+      }
+      // Copy assignment operator
+      Person & operator=(const Person &other) {
+          if (&other == this)
+            return *this;
+          delete[] name;
+          name = new char[std::strlen(other.name) + 1];
+          std::strcpy(name, other.name);
+          age = other.age;
+          return *this;
+      }
+      // Move constructor
+      Person(Person&& other) noexcept : name(nullptr), age(0) {
+          swap(*this, other);
+      }
+      // Move assignment operator
+      Person & operator=(Person&& other) noexcept {
+          swap(*this, that);
+          return *this;
+      }
+  };
+```
+  * В примере выше можно заменить операторы присваивания на один `Person& operator=(Person other)` и воспользоваться идеей copy and swap, однако возникают проблемы с гарантиями исключений. В этом случае правило пяти становится правилом четырех.
