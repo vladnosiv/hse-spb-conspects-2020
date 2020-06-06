@@ -3453,6 +3453,297 @@ v.erase(unique(v.begin(), v.end()), v.end());
 Автор: <Имя Фамилия>
 ## Билет 31
 Автор: Александр Морозов
+
+### `shared_ptr` и `weak_ptr` для кэша
+
+* Хотим реализовать кеш текстур, есть игровой движок, какие-то текстурки подгружены, эти текстурки используют разные куски программы, пока текстурка кому-то нужна, она должна жить, как только она никому не нужна, она удаляется, идеальный пример для `shared_ptr`...
+* [Код с практики](https://github.com/yeputons/hse-2019-cpp/blob/master/24-200409p/solutions/03-misc/01-cache.cpp)
+
+### Особенности умных указателей для массивов
+
+* Нужно использовать `unique_ptr<A[]>(arr)`, чтобы в деструкторе вызвался `delete[]`, а не `delete`. Впрочем, если можно, лучше использовать `make_unique<A[]>(size)` (почему - написано ниже).
+
+### `shared_ptr` ковариантен. Он преобразуется, как обычные указатели (к базовому неявно, к наследникам явно).
+
+---
+
+### Простые переменные и поля
+
+* Если вы всегда владеете объектом единолично — по значению, идеальный вариант:
+  ```c++
+  struct Dsu {
+      vector<int> parent;
+      Dsu(int n) : parent(n, -1) {}
+  };
+  ```
+* Если надо иногда не хранить объект и нет рекурсии — `std::optional` (C++17, +1 байт, нет дополнительных выделений памяти):
+  ```c++
+  struct Config {
+      optional<string> outputFileName;
+  };
+  ```
+
+---
+### Умные указатели: `unique_ptr`
+* Если есть рекурсия или надо передавать владение объектом, но владелец всегда один — `std::unique_ptr`
+  ```c++
+  struct SearchTreeNode {
+      std::unique_ptr<SearchTreeNode> left, right;
+      int key; string value;
+  };
+  ```
+* Если надо явно передать функции владение объектом, который не хочется копировать/перемещать
+  ```c++
+  void passToAnotherProcessAndForget(std::unique_ptr<SomeData> iOwnItNow);
+  ```
+* Если надо вернуть владение из функции:
+  ```c++
+  std::unique_ptr<SomeData> readFromAnotherProcess();
+  ```
+
+---
+### Про `unique_ptr`
+* Используется часто.
+* Можно указать свой функтор удаления (вроде `fclose`), но лучше полностью написать RAII-обёртку (вроде `istream`/`ostream`).
+* Можно узнать значение указателя для совместимости:
+  ```c++
+  {
+      std::unique_ptr<SomeData> ptr = ....;
+      SomeData *ptr2 = ptr.get();
+  }  // delete;
+  ```
+* Можно вытащить владение указателя для совместимости:
+  ```c++
+  {
+      std::unique_ptr<SomeData> ptr = ....;
+      SomeData *ptr2 = ptr.release();
+  }  // утечка
+  ```
+
+---
+### Умные указатели: `shared_ptr`
+* Владельцев несколько и никак не сделать одного:
+  ```c++
+  class Window1 {
+      std::shared_ptr<SuperImportantData> data;
+  };
+  class Window2 {
+      std::shared_ptr<SuperImportantData> data;
+  };
+  ```
+* Выделит в куче счётчик активных ссылок.
+  Удалит данные, когда тот упадёт до нуля.
+* Сильно дороже `unique_ptr` из-за счётчика и многопоточности.
+* Если создать второй `shared_ptr`, будет новый счётчик:
+  ```c++
+  {
+      shared_ptr<Data> x = ....;
+      shared_ptr<Data> y = x.get();
+  }  // `x`, `y` вызовут `delete`
+  ```
+
+---
+### Умные указатели: `weak_ptr`
+* `shared_ptr` не работает с циклами:
+  ```c++
+  class SuperImportantData {
+      std::vector<std::shared_ptr<SuperImportantData>> children;
+      std::shared_ptr<SuperImportantData> parent;  // Упс, цикл.
+  };
+  ```
+* Для разрыва циклов можно делать ссылки наверх через `std::weak_ptr`:
+  ```c++
+  class SuperImportantData {
+      std::vector<std::shared_ptr<SuperImportantData>> children;
+      std::weak_ptr<SuperImportantData> parent;
+  };
+  ```
+* Чтобы использовать `weak_ptr`, надо его преобразовать в `shared_ptr`
+  (потому что многопоточность).
+* `weak_ptr` автоматически обнулится при удалении родителя.
+
+`shared_ptr`/`weak_ptr` используется очень редко, обычно владелец один.
+
+---
+### Чистые указатели
+* Совместимость с Си (лучше сразу обернуть в RAII или умный указатель).
+* Ссылаемся на объект, который точно нас переживёт:
+  ```
+  struct SearchTreeNode {
+      std::unique_ptr<SearchTreeNode> left, right;
+      SearchTreeNode *parent;
+      int key; string value;
+  };
+  ```
+* Пишем свой умный указатель
+
+---
+### Создание умных указателей
+Всегда используйте `make_unique`, не пишите `new`:
+```c++
+foo(unique_ptr<Foo>(new Foo), unique_ptr<Bar>(new Bar));
+```
+До C++17 компилятор мог сначала выполнить все `new`, а потом все конструкторы.
+Это утечка, если один из `new` бросал.
+
+Лучше так:
+```c++
+foo(make_unique<Foo>(), make_unique<Bar>());
+```
+.
+### Наследование
+```c++
+unique_ptr<Derived> d = ....;
+unique_ptr<Base> b = d;
+```
+---
+### Передача параметров в функции
+Смотри [GotW 91](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/) (Guru of the Week, автор — Herb Sutter).
+
+* Практически всегда по значению, `&&` и умные указатели не нужны:
+    ```c++
+    void foo(vector<int> foo_data) { sort(foo_data.begin(), foo_data.end(); .. };
+    int main() {
+        vector<int> data = {1, 2, 3, 4, 5};
+        foo(data);  // Тут скопируем, вектор ещё нужен.
+        data.emplace_back(6);  // {1, 2, 3, 4, 5, 6}
+        foo(std::move(data));  // Разрешили не копировать.
+        data.clear();  // Вектор мог остаться непустым, не определено moved-from.
+    }
+    ```
+
+* Если хотим отдать что-то с именем (даже `&&`) — пишем `std::move`:
+    ```c++
+    template<typename T> struct MyVector {
+        vector<T> data;
+        MyVector(vector<T> data_) : data(std::move(data_)) { /* data_ = ?? */ }
+        void push_back(T &&value) { data.emplace_back(std::move(value)); }
+    };
+    ```
+
+---
+### Параметры только для чтения/для записи
+* Если нам вcегда передают объект, а мы его только читаем:
+  ```c++
+  void printVector(const vector<int> &data);
+  ```
+
+* Если иногда не передают — `std::optional` (не указатель!):
+  ```c++
+  void maybePrintVector(const std::optional<vector<int>> &data);
+  ```
+
+* Если нам всегда нужно передать наружу объект (не указатель!):
+  ```c++
+  void readAndAppendToVector(vector<int> &data);
+  ```
+  _Осторожно_: а что, если `data` исходно непуст? Верните по значению или задокументируйте.
+
+* Если пользователь не всегда хочет ответ — указатель.
+  <!-- Указатель здесь лучше ссылки только потому что в нём может быть `nullptr`. В указатель запишем ответ. Владеет им вызывающий. -->
+  ```c++
+  void readAndMaybeAppendToVector(vector<int> *const data);
+  ```
+
+---
+### Rvalue-ссылки в параметрах
+Не нужно, если объект умеет только `move` ([`unique_ptr`](https://stackoverflow.com/a/8114913/767632)):
+```c++
+void foo(unique_ptr<Foo> x /* unique_ptr<Foo> &&x */);
+unique_ptr<Foo> bar;
+foo(bar);             // Не скомпилируется в обоих случаях.
+foo(get_bar());       // Скомпилируется в обоих случаях.
+foo(std::move(bar));  // Скомпилируется в обоих случаях.
+```
+<!--
+Это может быть чуть менее эффективно в общем случае: тут
+мы вызываем лишний конструктор перемещения и деструктор.
+Для `unique_ptr` всё равно.
+-->
+
+Обычно не нужно, если объект можно копировать:
+```c+++
+void foo(Foo &&x);
+Foo bar;
+foo(bar);             // Не компилируется.
+foo(Foo(bar));        // Надо явно копировать, но так не принято.
+foo(std::move(bar));  // Явно мувать можно всегда.
+```
+
+Иногда `&&` нужно для оптимизаций или move-конструкторов:
+
+```c++
+void push_back(const T&);
+void push_back(T&&);
+```
+
+---
+### Умные указатели в параметрах
+Умный указатель — пара `(данные, владение)`.
+В параметрах — только если нам важно, как именно им владеет __вызвавший__.
+Обычно неважно.
+
+* `const unique_ptr<T>&` — лучше заменить на `T&` (`const` явно исчез). <!-- константен только сам указатель; а вдруг у нас вообще объект на стеке? Тоже уникальный владелец -->
+  * Это не семантика &laquo;у объекта один владелец&raquo; — стэк, поле...
+* `unique_ptr<T>&` — почти никогда <!-- пример: swap, за деталями — в GotW -->
+* `const shared_ptr<T>&` — почти никогда <!-- пример: когда иногда хотим себе скопировать, за деталями — в GotW  -->
+* `shared_ptr<T>&` — почти никогда
+
+```c++
+// Функция хочет скопировать владение `window` куда-то ещё.
+void addToAnotherDesktop(shared_ptr<Window> window) {  // shared_ptr по значению.
+    recentlyMovedWindows.emplace_back(window);
+    myWindows.emplace_back(std::move(window));
+}
+```
+```c++
+Node(Node left_, Node right_)
+    : left(make_unique<Node>(std::move(left_))), .... {}
+// Оптимизация: всегда оборачиваем в `unique_ptr`, давайте сразу его возьмём.
+Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
+    : left(std::move(left_)), right(std::move(right_)) {}
+```
+
+###  Далее представлены переводы двух статей, которые упоминал Егор, они перескаются с лекциями, которые расположены выше.
+### Краткий перевод [GotW 89](https://herbsutter.com/2013/05/29/gotw-89-solution-smart-pointers/)
+#### Когда использовать `shared_ptr`, а когда `unique_ptr`?
+
+Если сомневаетесь, используйте `unique_ptr`, его всегда можно будет сконвертировать через `move` в `shared_ptr`. Если сразу знаете, что нужно общее владение, используйте `shared_ptr`, создавая его с помощью `make_shared`. Есть три причины по умолчанию использовать `unique_ptr`:
+* Во-первых, нужно использовать самую простую сущность, которая достаточна. Если `unique_ptr` позже станет недостаточно, его можно сконвертировать.
+* Во-вторых, `unique_ptr` быстрее, чем `shared_ptr`, потому что не отслеживает информацию о числе ссылок и не хранит `control block` (описано [тут](https://en.cppreference.com/w/cpp/memory/shared_ptr))
+* В-третьих, если изначально использовать `unique_ptr`, указатель можно будет сконвертировать в `shared_ptr`, а в обратную сторону - нет.
+
+#### Почему всегда стоит использовать `make_shared`? 
+
+Примечание: если вам нужно создать объект с пользовательским аллокатором, можно использовать `allocate_shared`.
+Есть два случая, в которых не получится использовать `make_shared`: (a) нужен пользовательский `deleter`, например, когда данные лежат не в памяти, или лежат в нестандартной области памяти (`make_shared` не поддерживает пользовательский `deleter`); и (b) когда нужно создать `shared_ptr` из сырого указателя, переданного из другого (обычно наследственного) кода. 
+
+Использовать же `make_shared` предпочтительно, потому что: 
+* Во-первых, код с `make_shared` проще. При написании кода на первое место нужно ставить его ясность и корректность.
+* Во-вторых, код с `make_shared` более эффективен. В случае `make_shared` данные объекта могут аллоцироваться вместе с `control block`, тогда как при написании `shared_ptr<Data>{new Data{}}` сначала аллоцируется `Data`, и только потом `shared_ptr` аллоцирует свой `control block`.
+
+
+#### Почему всегда стоит использовать `make_unique`?
+
+Случаи, когда `make_unique` не подходит, те же, что и для `make_shared`. Причины использовать `make_unique` тоже те же, но есть еще две:
+
+* Нужно использовать `make_unique<T>()` вместо `unique_ptr<T>{new T{}}`, потому что нужно избегать явного использования `new`. 
+* `foo(make_unique<T>(), make_unique<T>())` помогает избежать проблем с утечкой памяти в случае выброса исключения, которые возникают при использовании `foo(unique_ptr<T>{new T{}}, unique_ptr<T>{new T{}}`
+
+### Краткий перевод [GotW 91](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/).
+#### Почему не стоит передавать `shared_ptr` в функцию по значению? 
+	При передаче по значению нужно скопировать аргумент (обычно) и уничтожить его при выходе из функции (всегда). Это значит, что нужно производить увеличение и уменьшение числа ссылок на объект, на который указывает `shared_ptr`.
+* Первая и главная проблема производительности здесь это то, что число ссылок это атомарная `shared` переменная, и ее увеличение и уменьшение это синхронизированные `read-modify-write` операции
+* Вторая и менее значимая причина это то, что в каждый момент только одно ядро процессора может иметь доступ к кэш-линии переменной, отвечающей за число ссылок, а это может вызвать проблемы, если, например, несколько процессов в цикле постоянно изменяют число ссылок на некоторый объект (или даже на разные объекты, но в одной кэш-линии).
+
+#### Каким способом лучше передавать `input-only` параметр в функцию?
+
+* Лучше передавать объект по ссылке или указателю(**Егор говорит, что нужно использовать `optional`, а не указатель!**), если известно, что время жизни ссылки или указателя не меньше, чем время жизни аргумента. Как обычно, указатель нужно использовать, если параметр может быть пустым, а ссылку - если не может. Также нужно не забыть `const`. 
+* Передача `unique_ptr` в функцию по значению означает, что владение объектом передается от вызывавшего вызываемому. 
+* Передача `unique_ptr` по ссылке используется в случае, когда выполняются операции над самим `unique_ptr`, и функция потенциально может сделать так, что этот параметр будет указывать на другой объект после выхода из нее. 
+* Передача `shared_ptr` по значению подразумевает взятие общего владения. Она имеет место, когда функция хочет сохранить копию `shared_ptr`, и в этом случае стоимости копирования не избежать. Если нужно передать `shared_ptr` дальше, можно просто использовать `std::move`.
+* Передача `shared_ptr` по ссылке используется в случае, когда выполняются операции над самим `shared_ptr`, и функция потенциально может сделать так, что этот параметр будет указывать на другой объект после выхода из нее. В случае, если функция может захотеть сохранить копию `shared_ptr`, но не обязательно это сделает, можно передать `const shared_ptr&`, и скопировать его при надобности.
+
 ## Билет 32
 Автор: <Имя Фамилия>
 ## Билет 33
@@ -3626,6 +3917,133 @@ const int &max = e.second;  // Oops.
 С ними лучше `std::tie`.
 ## Билет 34
 Автор: Александр Морозов
+
+## Специализации шаблонов
+### Синтаксис для `stack<bool>`
+```
+template<typename T> struct stack { ... }; // Общий случай
+template<>
+struct stack<bool> { // Для конкретных параметров.
+    // Абсолютно независимая реализация.
+};
+```
+
+### Частичная специализация
+```
+template<typename T> struct unique_ptr {
+    T *data;
+    ~unique_ptr() { delete data; }
+};
+template<typename T> struct unique_ptr<T[]> {
+    T *data;
+    ~unique_ptr() { delete[] data; }
+};
+```
+
+Работает pattern matching.
+Можно зачем-нибудь специализировать как `template<typename A, typename B> struct unique_ptr<map<A, B>> { ... }`.
+
+### Немного type traits
+Так можно делать вычисления над типами и значениями на этапе компиляции:
+```
+template<typename T> struct is_reference { constexpr static bool value = false; };
+template<typename T> struct is_reference<T&> { constexpr static bool value = true; };
+template<typename T> struct is_reference<T&&> { constexpr static bool value = true; };
+//
+printf("%d\n", is_reference<int&>::value);
+```
+
+Это один из способов реализовывать `<type_traits>` (второй будет в 4 модуле, называется SFINAE).
+
+Ещё пример:
+```
+template<typename U, typename V> struct is_same { constexpr static bool value = false; };
+template<typename T> struct is_same<T, T> { constexpr static bool value = true; };
+```
+
+А ещё это можно использовать в своих библиотеках.
+Например, для сериализации: вы пишете общий случай `template<typename T> struct serializer {};`,
+а дальше для каждого типа реализуете `struct serializer { static std::string serialize(const T&); static T deserialize(std::string); }`
+
+## Специализация функций
+Для функций есть только полная специализация:
+```
+template<> void swap(Foo &a, Foo &b) { ... }
+```
+Частичной нет.
+Вместо неё предполагается использовать перегрузки, если очень надо:
+```
+template<typename T> void swap(vector<T> &a, vector<T> &b) { ... }
+```
+По техническим причинам это не всегда хорошо, правда, но таков факт жизни.
+
+## Прокси-объекты
+### Для `vector<bool>` 
+Если мы делаем битовую упаковку в `vector<bool>`, то мы больше не можем вернуть `bool&`.
+
+Но надо вернуть что-то такое, чтобы `a[i] = false;` работало.
+В C++03 и раньше хорошей идеей были прокси-объекты:
+
+```
+template<>
+struct vector<bool> {
+private:
+    struct vector_bool_proxy {
+        vector_bool_proxy operator=(bool value) {
+            // Установка бита.
+        }
+        operator bool() {
+            return // Чтение бита.
+        }
+        // А ещё надо operator</operator== для bool по-хорошему, брр...
+    };
+public:
+    vector_bool_proxy operator[](std::size_t i) { return vector_bool_proxy(....); }
+    bool operator[](std::size_t i) const { return ....; }
+};
+```
+
+### Проблемы
+Начиная с C++11, как только передали в `auto`: `auto x = v[10];`, ой, не `bool`.
+
+Если были forwarding-ссылки: можно использовать хитрость и писать `auto&&` (называется forwarding reference, и является ссылкой, если передать lvalue, или значением, если передать rvalue). 
+
+Если сделать `for (auto i : v)`, то из-за того, что `i` - прокси, изменение `i` повлечет изменение элемента `v`. В `vector<int>` не повлечет. Если же написать `for (auto&& i : v)`, то изменяться содержимое вектора будет вне зависимости от того, лежит внутри `bool` или `int`.
+
+
+## Tag dispatching
+* Хотим сделать свой `std::next`:
+  ```
+  template<typename It>
+  It my_next(/*std::random_access_iterator_tag, */It x, typename It::difference_type count) {
+      return x += count;
+  }
+  ```
+* Тут работает только для RandomAccess. Для ForwardIterator:
+  ```
+  template<typename It>
+  It my_next(/*std::forward_iterator_tag, */It x, typename It::difference_type count) {
+      for (; count; --count)
+          ++x;
+      return x;
+  }
+  ```
+* А теперь фокус (tag dispatching): есть специальный тип `It::iterator_category`.
+  Там бывает `std::random_access_iterator_tag` (пустая структура), наследуется
+  от `std::bidirectional_iterator_tag`, наследуется от `std::forward_iterator_tag`.
+  Так можно надо на этапе компиляции поставить `if`.
+  Можно добавить фиктивный параметр и сделать перегрузки,
+  а общую реализацию такую:
+  ```
+  template<typename It>
+  It my_next(It x, typename It::difference_type count) {
+      return my_next(typename It::iterator_category(), x, count);
+  }
+  ```
+* Это не сработает с `T*`, хотя они тоже указатели.
+  Поэтому можно использовать `std::iterator_traits<It>::iterator_category` вместо `typename It::iterator_category()`.
+	Также есть std::begin(arr), std::end(arr), которые умеют получать начало и конец как у стандартного контейнера, так и у массива. 
+
 ## Билет 35
 Автор: Петя Сурков
 
