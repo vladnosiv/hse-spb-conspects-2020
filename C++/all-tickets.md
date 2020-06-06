@@ -568,6 +568,7 @@ void foo(SomeClass x) {}
 void foo() {}
 
 int main() {
+    void foo();
     SomeClass a(...);
     foo(a);
 }
