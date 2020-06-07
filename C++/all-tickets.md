@@ -7512,6 +7512,7 @@ static_assert(parse_format("hello%d=%s").second[1] == 's');
 ```
 Таким образом, вот эта [библиотека](https://github.com/hanickadot/compile-time-regular-expressions) позволяет работать с регулярками в стиле `ctre::match<"[a-z]+([0-9]+)">(s)`
 
+RTTI: не написано, пусть хоть ссылка на презу будет: https://github.com/yeputons/hse-2019-cpp/blob/master/26-200421/presentation.md#311-rtti-%D0%B8-dynamic_cast
 ### TODO: RTTI
 #### TODO: "полиморфный класс"
 #### TODO: typeid
