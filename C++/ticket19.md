@@ -7,7 +7,7 @@
 когда явно пишем круглые, или фигурные скобки, зависит от вызываемого конструктора,
 то есть [direct initialization (cppreference)](https://en.cppreference.com/w/cpp/language/direct_initialization). Явным также является `static_cast`, например.
 
-Если же пишем равно, или принимаем в функцию, или возвзращаем из функции, то
+Если же пишем равно, или принимаем в функцию, или возвращаем из функции, то
 происходит неявное преобразование типа, то есть происходит [copy initialization (cppreference)](https://en.cppreference.com/w/cpp/language/copy_initialization#:~:text=The%20effects%20of%20copy%20initialization,destination%20object%3A%20see%20copy%20elision).
 
 Определения direct и copy из конспекта, эти виды важны в этом билете.
@@ -203,4 +203,4 @@ int main() {
 }
 ```
 
-Но как и с любыми неявными операторами можно получить проблемы, особенно с `auto` или другими шаблонами.
+Но, как и с любыми неявными операторами можно получить проблемы, особенно с `auto` или другими шаблонами.
