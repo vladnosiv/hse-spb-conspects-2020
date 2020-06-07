@@ -1723,7 +1723,7 @@ private:
 struct DataHolder {
   DataHolder(const DataHolder& other) : size_{other.size_} { 
       std::unique_ptr<char[]> newdata = std::make_unique<char[]>(size_);
-			std::copy(other.data_, other.data_ + other.size_, newdata.get());
+      std::copy(other.data_, other.data_ + other.size_, newdata.get());
       data_ = newdata.release();
   }
   
@@ -1732,7 +1732,7 @@ struct DataHolder {
     std::swap(size_, other.size_);
     return *this;
   }
-	// При вызове создается копия, забираем себе ее данные, передаем other наши, после выхода из функции он их уничтожает
+  // При вызове создается копия, забираем себе ее данные, передаем other наши, после выхода из функции он их уничтожает
 
 private:
   char* data_; // лучше использовать unique_ptr, чтобы избегать утечек
