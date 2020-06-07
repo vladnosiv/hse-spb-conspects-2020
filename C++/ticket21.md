@@ -80,6 +80,10 @@ constexpr typename std::remove_reference<_Tp>::type&& move(_Tp&& __t) noexcept{
 
 Нельзя:
 * Использум объект не в последний раз
+* return std::move(x) -  так делать нельзя, выключается RVO. Но если x - unique_ptr, то до 17 плюсов нужно, а с 17 там copy-elision (с разбора 1 теста, который про мувы: (тест)[https://www.youtube.com/watch?v=7h-1R8L2cu4&list=PLxMpIvWUjaJuKqgCKqnaCSgn7fHSE2clf&index=20&t=0s]
+* auto x = std::move(foo()) - так делать нельзя, так как мувать из rvalue (справа именно оно) бессмысленно
 
 Нужно:
 * Для `unique_ptr` при передаче в функцию/конструктор/другую переменную
+
+Хорошие примеры можно взять из теста, (ссылка)[https://docs.google.com/forms/d/e/1FAIpQLSdw3gFQ3aUHfZDUD3BwjiG_L6sguoXCSbW47S2edDg42N9qkQ/viewform]
