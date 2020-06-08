@@ -110,24 +110,27 @@ foo<int&>(n);
 То есть если в нас передали `lvalue`, то дальше хотим тоже передать `lvalue`. Передали `rvalue`, дальше хотим передать `rvalue`.
 ```cpp
 template<typename T>
-void foo (T &&x) // "Forvanding referece"
+void foo (T &&x) // "Forwanding referece"
 
-// Not a "Forvanding referece"
+// Not a "Forwanding referece"
 template<typename T>
 void foo (vector<T> &&x)
 void foo (int &&x)
 ```
-Если в функцию передали `T` `&&x`, то это единственный случай с Forvanding referece.
+Если в функцию передали `T` `&&x`, то это случай с Forwanding referece, также Forwanding referece можно встретить в выражении.
+```cpp
+auto&& val = some_expression;
+```
 Попробуем в `foo` передавать разные значения.
 ```cpp
 template<typename T>
-void foo (T &&x) // "Forvanding referece"
+void foo (T &&x) // "Forwanding referece"
 int v = 1;
 const cv = 2;
 
 foo(10);             // T = int,        x = int&&
 foo(v);              // T = int&,       x = int&
-foo(cv);             // T = const int&, x = const int&   
+foo(cv);             // T = const int&, x = const int&
 foo(std::move(v));   // T = int,        x = int&&
 foo(std::move(cv));   // T = const int, x = const int&&
 ```
@@ -178,17 +181,12 @@ decltype(auto) wrap(Fn &&fn, Arg &&arg) {
    }
    ```
    
-3. **примечание от читающих ночью (Юра)** кажется, здесь произошла копипаста и как работает auto&& не рассказано. Поэтому об этом можно прочитать в 17 билете, там расписано подробно и про вывод типов в общем, и про вывод типов для auto и decltype(auto). Впрочем, здесь ниже про decltype(auto) тоже расписано. По факту, если здесь написать auto&& val = some_expression или auto&& foo() {...}, то вывестись должно норм, но рекомендую при подготовке проверить
-
+3. > точнее можно прочитать в билете 17, автор Юра Худяков
    ```cpp
    auto&& val = some_expression;
    ```
-   В этом случае, ожидаемо, если тип `some_expression` — `T` или `const T`, компилироваться это не будет, так как `lvalue` ссылку нельзя инициализировать `rvalue`. Если тип `some_expression` — `T&`, то и `var` будет иметь тип `T&`. Здесь важным моментом является то, что если тип `some_expression` — `const T&`, то и тип `var` будет `const T&`. Все хорошо, но тогда мы не обрабатываем значения в такой реализации.
-   ```cpp
-   auto& foo() {
-       return boo();
-   }
-   ```
+   Это, как было написано раньше, Forwarding reference, тогда если нам передали `lvalue`, то и `auto` будет `lvalue`, аналогично с `rvalue`. Заметим, что при этом будет сохраняться `const`. 
+   
 Всегда при этом можно сделать 
 ```cpp
 auto foo(int a) -> decltype(boo(a)) {
@@ -226,7 +224,7 @@ decltype(auto) foo (int x) {
     return(x) // decltype( (x) ) = int& см пример 3 в разделе decltype(expr)
 }
 ```
-Мы не можем возвращаемое значение сохранить в переменную
+Мы не всегда можем возвращаемое значение сохранить в переменную, т.к. это может быть void.
 ```cpp
 decltype(auto) foo (int x) {
     auto a = boo(); // type a = void?
